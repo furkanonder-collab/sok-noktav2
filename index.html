@@ -6,102 +6,126 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Şok Nokta">
-<meta name="theme-color" content="#0f172a">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230f172a' width='100' height='100' rx='20'/><text x='50' y='65' text-anchor='middle' font-size='50'>⚡</text></svg>">
+<meta name="theme-color" content="#0b1120">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%230b1120' width='100' height='100' rx='20'/><text x='50' y='68' text-anchor='middle' font-size='52'>⚡</text></svg>">
 <title>Şok Nokta - Maliyet</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; padding: 12px; padding-bottom: 80px; }
-.header { text-align: center; padding: 12px 0 8px; }
-.header h1 { font-size: 18px; color: #60a5fa; }
-.header small { color: #64748b; font-size: 11px; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: radial-gradient(1200px 600px at 50% -10%, #1e293b 0%, #0b1120 55%) fixed, #0b1120;
+    color: #e2e8f0; min-height: 100vh; padding: 0 14px 90px;
+}
 
-.card { background: #1e293b; border-radius: 12px; padding: 14px; margin-bottom: 10px; }
-.card-title { font-size: 13px; color: #94a3b8; margin-bottom: 10px; font-weight: 600; }
+/* Header */
+.header { text-align: center; padding: 22px 0 14px; }
+.logo { width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(135deg,#3b82f6,#8b5cf6); display: inline-flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 24px rgba(59,130,246,0.35); margin-bottom: 8px; }
+.header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; }
+.header small { color: #64748b; font-size: 12px; }
 
-.kur-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Cards */
+.card { background: rgba(30,41,59,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(148,163,184,0.1); border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+.card-title { font-size: 12px; color: #94a3b8; margin-bottom: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+
+/* Ayarlar (kur) toggle */
+.ayar-toggle { text-align: center; margin: 2px 0 12px; }
+.ayar-toggle button { background: rgba(148,163,184,0.1); border: 1px solid rgba(148,163,184,0.15); color: #94a3b8; font-size: 12.5px; cursor: pointer; padding: 7px 16px; border-radius: 999px; transition: all 0.2s; }
+.ayar-toggle button:active { background: rgba(148,163,184,0.2); }
+
+.kur-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .kur-grid.uc { grid-template-columns: 1fr 1fr 1fr; }
-.field { display: flex; flex-direction: column; gap: 3px; }
-.field label { font-size: 11px; color: #64748b; }
-.field input { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; color: #e2e8f0; font-size: 16px; text-align: center; width: 100%; -webkit-appearance: none; }
-.field input:focus { outline: none; border-color: #3b82f6; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label { font-size: 11px; color: #64748b; font-weight: 600; padding-left: 2px; }
+.field input {
+    background: #0b1120; border: 1.5px solid #1e293b; border-radius: 12px; padding: 13px;
+    color: #f1f5f9; font-size: 17px; text-align: center; width: 100%; -webkit-appearance: none;
+    transition: border-color 0.2s, box-shadow 0.2s; font-weight: 600;
+}
+.field input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+.field input::placeholder { color: #475569; font-weight: 400; }
 
-.urun-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
-.urun-row .field { flex: 1; }
-.btn-ekle { background: #3b82f6; border: none; color: white; border-radius: 8px; padding: 10px 14px; font-size: 20px; cursor: pointer; white-space: nowrap; min-width: 44px; }
-.btn-ekle:active { background: #2563eb; }
-
-.gram-toggle { display: flex; gap: 0; border-radius: 8px; overflow: hidden; border: 1px solid #334155; margin-bottom: 8px; }
+/* Tane / Düzine toggle */
+.gram-toggle { display: flex; gap: 4px; background: #0b1120; padding: 4px; border-radius: 12px; border: 1.5px solid #1e293b; margin-bottom: 12px; }
 .gram-toggle input { display: none; }
-.gram-toggle label { flex: 1; text-align: center; padding: 8px; font-size: 13px; color: #94a3b8; background: #0f172a; cursor: pointer; transition: all 0.2s; }
-.gram-toggle input:checked + label { background: #3b82f6; color: white; font-weight: 600; }
+.gram-toggle label { flex: 1; text-align: center; padding: 10px; font-size: 14px; color: #94a3b8; border-radius: 9px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
+.gram-toggle input:checked + label { background: linear-gradient(135deg,#3b82f6,#6366f1); color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.35); }
 
-.urun-list { margin-top: 8px; }
-.urun-item { background: #0f172a; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; position: relative; }
-.urun-item .urun-no { font-size: 11px; color: #64748b; margin-bottom: 4px; }
-.urun-item .urun-info { font-size: 14px; color: #cbd5e1; margin-bottom: 8px; }
-.urun-item .urun-info b { color: #e2e8f0; }
-.btn-sil { position: absolute; top: 8px; right: 10px; background: none; border: none; color: #64748b; font-size: 18px; cursor: pointer; padding: 2px 6px; }
-.btn-sil:active { color: #ef4444; }
+/* Ürün ekle row */
+.urun-row { display: flex; gap: 10px; align-items: flex-end; }
+.urun-row .field { flex: 1; }
+.btn-ekle {
+    background: linear-gradient(135deg,#3b82f6,#6366f1); border: none; color: white; border-radius: 12px;
+    padding: 0; font-size: 26px; cursor: pointer; height: 50px; min-width: 54px; display: flex;
+    align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(59,130,246,0.35); transition: transform 0.1s;
+}
+.btn-ekle:active { transform: scale(0.94); }
 
-.section-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin: 6px 0 4px 2px; font-weight: 600; }
+/* Ürün listesi */
+.urun-list { margin-top: 4px; }
+.urun-item { background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.08); border-radius: 16px; padding: 14px; margin-bottom: 12px; position: relative; animation: slideIn 0.25s ease; }
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.urun-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.urun-badge { background: linear-gradient(135deg,#3b82f6,#6366f1); color: white; font-size: 12px; font-weight: 700; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.urun-info { font-size: 14px; color: #cbd5e1; }
+.urun-info b { color: #f1f5f9; font-weight: 700; }
+.btn-sil { margin-left: auto; background: rgba(239,68,68,0.12); border: none; color: #f87171; font-size: 15px; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.btn-sil:active { background: rgba(239,68,68,0.28); }
 
-.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
-.box { border-radius: 6px; padding: 6px 4px; text-align: center; }
-.box .lbl { font-size: 9px; color: #94a3b8; }
-.box .val { font-size: 13px; font-weight: 700; }
+/* Ana sonuç (Ort.) */
+.main-result { background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.12)); border: 1px solid rgba(99,102,241,0.25); border-radius: 14px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.main-result .lbl { font-size: 12px; color: #a5b4fc; font-weight: 600; }
+.main-result .val { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
 
-.bg-dark { background: #1e293b; }
-.bg-mid { background: #334155; }
-
-.c-z { color: #f59e0b; }
+/* Alt kırılım (Z/N/S) */
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.box { background: rgba(51,65,85,0.5); border-radius: 12px; padding: 9px 4px; text-align: center; }
+.box .lbl { font-size: 10px; color: #94a3b8; font-weight: 600; margin-bottom: 2px; }
+.box .val { font-size: 14px; font-weight: 700; }
+.c-z { color: #fbbf24; }
 .c-n { color: #a78bfa; }
 .c-s { color: #34d399; }
-.c-pct { color: #fb923c; }
-.c-brut { color: #60a5fa; }
-.c-satis { color: #fbbf24; }
-.c-ort { color: #f472b6; font-weight: 800; }
 
-.ozet { text-align: center; margin-top: 8px; }
-.ozet span { font-size: 12px; color: #94a3b8; }
-.ozet b { color: #60a5fa; }
+/* Boş durum */
+.empty { text-align: center; padding: 40px 20px; color: #475569; }
+.empty .ico { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
+.empty p { font-size: 13px; line-height: 1.5; }
 
-.actions-bar { display: flex; gap: 8px; margin-top: 10px; }
-.btn-temizle { flex: 1; background: #991b1b; border: none; color: white; border-radius: 8px; padding: 10px; font-size: 13px; cursor: pointer; }
-.btn-temizle:active { background: #7f1d1d; }
-
-.ayar-toggle { text-align: center; margin-bottom: 6px; }
-.ayar-toggle button { background: none; border: none; color: #64748b; font-size: 12px; cursor: pointer; text-decoration: underline; }
+/* Özet + temizle */
+.ozet { text-align: center; margin: 4px 0 12px; }
+.ozet span { font-size: 12px; color: #64748b; }
+.ozet b { color: #94a3b8; }
+.btn-temizle { width: 100%; background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.2); color: #f87171; border-radius: 12px; padding: 12px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.btn-temizle:active { background: rgba(153,27,27,0.3); }
 </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>Şok Nokta Maliyet</h1>
+    <div class="logo">⚡</div>
+    <h1>Şok Nokta</h1>
     <small>Hızlı maliyet hesaplayıcı</small>
 </div>
 
 <div class="ayar-toggle">
-    <button onclick="toggleKur()">⚙ Kurları Düzenle</button>
+    <button onclick="toggleKur()">⚙️ Kur & Nakliye Ayarları</button>
 </div>
 
 <div class="card" id="kurCard" style="display:none">
-    <div class="card-title">Döviz Kurları</div>
+    <div class="card-title">💱 Döviz Kurları</div>
     <div class="kur-grid">
         <div class="field"><label>RMB Kuru</label><input type="number" id="rnb" value="6.60" step="0.01" inputmode="decimal" onchange="kurKaydet()"></div>
         <div class="field"><label>USD Kuru</label><input type="number" id="usd" value="45.00" step="0.01" inputmode="decimal" onchange="kurKaydet()"></div>
     </div>
-    <div style="height:8px"></div>
-    <div class="card-title">Nakliye ($/ton)</div>
+    <div class="card-title" style="margin-top:16px">🚚 Nakliye ($/ton)</div>
     <div class="kur-grid uc">
-        <div class="field"><label>Zirve</label><input type="number" id="zNak" value="52" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
-        <div class="field"><label>Neyma</label><input type="number" id="nNak" value="42" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
-        <div class="field"><label>Serkan</label><input type="number" id="sNak" value="48" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
+        <div class="field"><label>Z</label><input type="number" id="zNak" value="52" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
+        <div class="field"><label>N</label><input type="number" id="nNak" value="42" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
+        <div class="field"><label>S</label><input type="number" id="sNak" value="48" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-title">Ürün Ekle</div>
+    <div class="card-title">➕ Ürün Ekle</div>
     <div class="gram-toggle">
         <input type="radio" name="gramTipi" id="gramTane" value="1" checked>
         <label for="gramTane">Tane</label>
@@ -110,7 +134,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     </div>
     <div class="urun-row">
         <div class="field"><label>Gram</label><input type="number" id="gramInput" inputmode="decimal" placeholder="250"></div>
-        <div class="field"><label>Fiyat (RMB)</label><input type="number" id="fiyatInput" inputmode="decimal" placeholder="12.5"></div>
+        <div class="field"><label>Fiyat (¥)</label><input type="number" id="fiyatInput" inputmode="decimal" placeholder="12.5"></div>
         <button class="btn-ekle" onclick="ekle()">+</button>
     </div>
 </div>
@@ -121,8 +145,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
     <span>Toplam <b id="ozetAdet">0</b> ürün</span>
 </div>
 
-<div class="actions-bar" id="actionsBar" style="display:none">
-    <button class="btn-temizle" onclick="temizle()">🗑 Tümünü Temizle</button>
+<div id="actionsBar" style="display:none">
+    <button class="btn-temizle" onclick="temizle()">🗑️ Tümünü Temizle</button>
 </div>
 
 <script>
@@ -164,26 +188,12 @@ function hesapla(gram, fiyat) {
     var mN = (fiyat * 1.05 * rnb) + (g * 1.1 * (nN / 1000) * usd);
     var mS = (fiyat * 1.05 * rnb) + (g * 1.1 * (sN / 1000) * usd);
 
-    var farkZN = (mZ - mN) / mZ;
-    var farkSN = (mS - mN) / mS;
-    var farkZS = (mZ - mS) / mZ;
-
     var bZ = mZ * 2;
     var bN = mN * 2;
     var bS = mS * 2;
     var ortGuclu = (bZ + bN + bS) / 3;
 
-    var sZ = mZ * 1.6;
-    var sN2 = mN * 1.6;
-    var sS = mS * 1.6;
-    var ortFiyat = (sZ + sN2 + sS) / 3;
-
-    return {
-        mZ: mZ, mN: mN, mS: mS,
-        farkZN: farkZN, farkSN: farkSN, farkZS: farkZS,
-        bZ: bZ, bN: bN, bS: bS, ortGuclu: ortGuclu,
-        sZ: sZ, sN: sN2, sS: sS, ortFiyat: ortFiyat
-    };
+    return { bZ: bZ, bN: bN, bS: bS, ortGuclu: ortGuclu };
 }
 
 function ekle() {
@@ -204,42 +214,49 @@ function sil(idx) {
 }
 
 function temizle() {
+    if (!confirm('Tüm ürünler silinsin mi?')) return;
     urunler = [];
     render();
 }
 
-function f(n) { return n.toFixed(2); }
-function pct(n) { return (n * 100).toFixed(1) + '%'; }
+function f(n) { return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function render() {
     var list = document.getElementById('urunList');
+    if (urunler.length === 0) {
+        list.innerHTML = '<div class="empty"><div class="ico">📦</div><p>Henüz ürün eklenmedi.<br>Gram ve fiyat girip <b>+</b> butonuna bas.</p></div>';
+        document.getElementById('ozet').style.display = 'none';
+        document.getElementById('actionsBar').style.display = 'none';
+        return;
+    }
     var html = '';
     for (var i = 0; i < urunler.length; i++) {
         var u = urunler[i];
         var h = hesapla(u.gram, u.fiyat);
         html += '<div class="urun-item">';
-        html += '<button class="btn-sil" onclick="sil('+i+')">×</button>';
-        html += '<div class="urun-no">#' + (i+1) + '</div>';
+        html += '<div class="urun-head">';
+        html += '<div class="urun-badge">' + (i+1) + '</div>';
         html += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + ' ¥</b></div>';
+        html += '<button class="btn-sil" onclick="sil('+i+')">✕</button>';
+        html += '</div>';
+
+        html += '<div class="main-result"><span class="lbl">Ort. Fiyat</span><span class="val">₺' + f(h.ortGuclu) + '</span></div>';
 
         html += '<div class="row3">';
-        html += '<div class="box bg-mid"><div class="lbl">B.Serkan</div><div class="val c-s">₺' + f(h.bS) + '</div></div>';
-        html += '<div class="box bg-mid"><div class="lbl">B.Zirve</div><div class="val c-z">₺' + f(h.bZ) + '</div></div>';
-        html += '<div class="box bg-mid"><div class="lbl">B.Neyma</div><div class="val c-n">₺' + f(h.bN) + '</div></div>';
-        html += '</div>';
-        html += '<div class="row3" style="margin-top:4px">';
-        html += '<div class="box bg-mid" style="grid-column:1/-1"><div class="lbl">Ort. Güçlü</div><div class="val c-ort">₺' + f(h.ortGuclu) + '</div></div>';
+        html += '<div class="box"><div class="lbl">S</div><div class="val c-s">₺' + f(h.bS) + '</div></div>';
+        html += '<div class="box"><div class="lbl">Z</div><div class="val c-z">₺' + f(h.bZ) + '</div></div>';
+        html += '<div class="box"><div class="lbl">N</div><div class="val c-n">₺' + f(h.bN) + '</div></div>';
         html += '</div>';
 
         html += '</div>';
     }
     list.innerHTML = html;
 
-    var show = urunler.length > 0;
-    document.getElementById('ozet').style.display = show ? 'block' : 'none';
-    document.getElementById('actionsBar').style.display = show ? 'flex' : 'none';
+    document.getElementById('ozet').style.display = 'block';
+    document.getElementById('actionsBar').style.display = 'block';
     document.getElementById('ozetAdet').textContent = urunler.length;
 }
+render();
 
 document.getElementById('fiyatInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') ekle();
