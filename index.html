@@ -154,9 +154,11 @@ var urunler = [];
 
 var _kurFields = ['rnb','usd','zNak','nNak','sNak'];
 function kurKaydet() {
-    var obj = {};
-    for (var i = 0; i < _kurFields.length; i++) obj[_kurFields[i]] = document.getElementById(_kurFields[i]).value;
-    localStorage.setItem('smh_kurlar', JSON.stringify(obj));
+    try {
+        var obj = {};
+        for (var i = 0; i < _kurFields.length; i++) obj[_kurFields[i]] = document.getElementById(_kurFields[i]).value;
+        localStorage.setItem('smh_kurlar', JSON.stringify(obj));
+    } catch(e) {}
     render();
 }
 function kurYukle() {
@@ -265,6 +267,11 @@ document.querySelectorAll('input[name="gramTipi"]').forEach(function(r) { r.addE
 document.getElementById('gramInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') document.getElementById('fiyatInput').focus();
 });
+
+// Çevrimdışı çalışma (service worker) — internetsiz kullanım için
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+}
 </script>
 </body>
 </html>
