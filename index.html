@@ -71,6 +71,9 @@ body {
 .adet-input input::placeholder { color: #475569; font-weight: 400; }
 .btn-siparis { width: 100%; background: linear-gradient(135deg,#10b981,#059669); border: none; color: white; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(16,185,129,0.35); transition: transform 0.1s; }
 .btn-siparis:active { transform: scale(0.98); }
+.fis-banner { background: linear-gradient(135deg, rgba(59,130,246,0.22), rgba(139,92,246,0.16)); border: 1px solid rgba(99,102,241,0.4); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: #c7d2fe; font-weight: 600; }
+.fis-banner button { background: rgba(148,163,184,0.18); border: none; color: #e2e8f0; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.btn-fisekle { width: 100%; background: linear-gradient(135deg,#10b981,#059669); border: none; color: white; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
 
 /* Fiş (sepet) ürün kartı */
 .urun-list { margin-top: 4px; }
@@ -161,6 +164,10 @@ body {
 
 <!-- ============ ÜRÜN EKLE ============ -->
 <div id="view-urun">
+    <div class="fis-banner" id="fisBanner" style="display:none">
+        <span id="fisBannerText">🧾 Fişe ürün ekleniyor</span>
+        <button onclick="fiseEklemeBitir()">✓ Bitir</button>
+    </div>
     <div class="ayar-toggle">
         <button onclick="toggleKur()">⚙️ Kur, Nakliye & Yedek</button>
     </div>
@@ -248,6 +255,7 @@ body {
 var urunler = [];   // mevcut fiş (sepet)
 var fisler = [];    // kayıtlı fişler
 var _girisFoto = null;  // önizlemedeki ürünün fotoğrafı
+var aktifFisId = null;  // kayıtlı bir fişe ürün ekleme modu (null = normal sepet)
 
 /* ---------- localStorage ---------- */
 var _kurFields = ['rnb','usd','zNak','nNak','sNak'];
@@ -444,8 +452,19 @@ function siparisVer() {
     var adet = parseInt(document.getElementById('onAdet').value) || 1;
     if (adet < 1) adet = 1;
 
-    urunler.push({ gram: gram, fiyat: fiyat, adet: adet, gb: guncelGb(), img: _girisFoto });
-    urunlerKaydet();
+    var yeni = { gram: gram, fiyat: fiyat, adet: adet, gb: guncelGb(), img: _girisFoto };
+
+    if (aktifFisId) {
+        // Kayıtlı bir fişe ekleniyor
+        var fs = null;
+        for (var i = 0; i < fisler.length; i++) if (fisler[i].id === aktifFisId) fs = fisler[i];
+        if (fs) { fs.urunler.push(yeni); fs.toplam = fisYuan(fs.urunler); fislerKaydet(); }
+    } else {
+        // Normal sepet
+        urunler.push(yeni);
+        urunlerKaydet();
+        renderFis();
+    }
 
     document.getElementById('gramInput').value = '';
     document.getElementById('fiyatInput').value = '';
@@ -454,7 +473,6 @@ function siparisVer() {
     girisFotoGuncelle();
     document.getElementById('onizleme').style.display = 'none';
     document.getElementById('gramInput').focus();
-    renderFis();
     tabRozetGuncelle();
 }
 
@@ -589,6 +607,7 @@ function fisAc(id) {
     html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + '</h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
     for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false, 'fisUrunSil(' + fs.id + ',' + j + ')');
     html += '<div class="toplam5">' + toplam5Rows(fs.urunler, k, '💰 Fiş Toplamı') + '</div>';
+    html += '<button class="btn-fisekle" onclick="fiseUrunEkleBasla(' + fs.id + ')">➕ Bu Fişe Ürün Ekle</button>';
     html += '<button class="btn-fissil" onclick="fisSil(' + fs.id + ')">🗑️ Bu Fişi Sil</button>';
     document.getElementById('fisDetay').innerHTML = html;
     document.getElementById('fislerList').style.display = 'none';
@@ -619,6 +638,7 @@ function fisUrunSil(fisId, urunIdx) {
     fislerKaydet();
     tabRozetGuncelle();
     if (fs.urunler.length === 0) {
+        // Fişte ürün kalmadı → fişi sil, listeye dön
         for (var j = 0; j < fisler.length; j++) { if (fisler[j].id === fisId) { fisler.splice(j, 1); break; } }
         fislerKaydet();
         tabRozetGuncelle();
@@ -627,6 +647,26 @@ function fisUrunSil(fisId, urunIdx) {
         return;
     }
     fisAc(fisId);
+}
+// Kayıtlı bir fişe ürün ekleme modunu başlat
+function fiseUrunEkleBasla(id) {
+    var fs = null;
+    for (var i = 0; i < fisler.length; i++) if (fisler[i].id === id) fs = fisler[i];
+    if (!fs) return;
+    aktifFisId = id;
+    document.getElementById('fisBannerText').innerHTML = '🧾 <b>' + escapeHtml(fs.ad) + '</b> fişine ekliyorsun';
+    document.getElementById('fisBanner').style.display = 'flex';
+    document.querySelector('.btn-siparis').textContent = '➕ Fişe Ekle';
+    tabGoster('urun');
+}
+// Ekleme modunu bitir, fiş detayına dön
+function fiseEklemeBitir() {
+    var id = aktifFisId;
+    aktifFisId = null;
+    document.getElementById('fisBanner').style.display = 'none';
+    document.querySelector('.btn-siparis').textContent = '🛒 Sipariş Ver';
+    tabGoster('siparisler');
+    if (id) fisAc(id);
 }
 
 /* ---------- Sola kaydır → Sil (dokunmatik) ---------- */
@@ -660,6 +700,7 @@ function swipeKur() {
             if (lastTx < -44) { el.classList.add('acik'); el.style.transform = 'translateX(-88px)'; }
             else { el.classList.remove('acik'); el.style.transform = 'translateX(0)'; lastTx = 0; }
         });
+        // Kaydırma yapıldıysa veya açıkken tıklamayı engelle (fiş açılmasın / kapansın)
         el.addEventListener('click', function(e) {
             if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; return; }
             if (el.classList.contains('acik')) {
