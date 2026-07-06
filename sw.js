@@ -1,5 +1,5 @@
 // Şok Nokta - çevrimdışı önbellek (service worker)
-var CACHE = 'sok-nokta-v1';
+var CACHE = 'sok-nokta-v2';
 var ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', function(e) {
@@ -19,12 +19,18 @@ self.addEventListener('activate', function(e) {
     );
 });
 
+// Önce internet dene, güncel sürümü önbelleğe al; internet yoksa önbellekten ver
 self.addEventListener('fetch', function(e) {
+    if (e.request.method !== 'GET') return;
     e.respondWith(
-        caches.match(e.request).then(function(r) {
-            return r || fetch(e.request);
+        fetch(e.request).then(function(resp) {
+            var copy = resp.clone();
+            caches.open(CACHE).then(function(c) { c.put(e.request, copy); });
+            return resp;
         }).catch(function() {
-            return caches.match('./index.html');
+            return caches.match(e.request).then(function(r) {
+                return r || caches.match('./index.html');
+            });
         })
     );
 });
