@@ -106,7 +106,7 @@ body {
 .toplam5 .v1 { font-size: 21px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
 .toplam5 .l2 { font-size: 12px; color: #fcd34d; font-weight: 700; }
 .toplam5 .v2 { font-size: 18px; font-weight: 800; color: #fcd34d; }
-.toplam5 .usd { font-size: 0.6em; font-weight: 700; margin-left: 4px; }
+.toplam5 .usd { font-weight: 700; margin-left: 5px; }
 .t5-info { font-size: 12px; color: #94a3b8; font-weight: 600; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(148,163,184,0.18); }
 
 .btn-fis { width: 100%; background: linear-gradient(135deg,#3b82f6,#6366f1); border: none; color: white; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(59,130,246,0.35); transition: transform 0.1s; margin-bottom: 8px; }
@@ -401,9 +401,9 @@ function toplamAdet(liste) {
 // Yuan → USD ($ = ¥ × RMB kuru ÷ USD kuru)
 function yuanUsd(yuan, k) { return yuan * (k.rnb || 0) / (k.usd || 1); }
 function yuanUsdStr(yuan, k) {
-    return '¥' + f(yuan) + '<span style="font-size:0.62em;color:#a5b4fc;font-weight:700;margin-left:4px">· $' + f(yuanUsd(yuan, k)) + '</span>';
+    return '¥' + f(yuan) + '<span style="color:#a5b4fc;font-weight:700;margin-left:5px">· $' + f(yuanUsd(yuan, k)) + '</span>';
 }
-// Fiş toplamı kutusu: çeşit/adet + normal + %5 dahil
+// Fiş toplamı kutusu: normal + %5 dahil
 function toplam5Rows(liste, k, baslik) {
     var yuan = fisYuan(liste);
     var y5 = yuan * 1.05;
@@ -561,7 +561,11 @@ function fislerRender() {
         html += '<div class="fis-alt"><span class="adet">' + fs.urunler.length + ' çeşit · ' + toplamAdet(fs.urunler) + ' adet</span><span class="fis-toplam">' + yuanUsdStr(fy, fs.kurlar || {}) + '</span></div>';
         html += '</div>';
     }
-    html += '<div class="genel-toplam" style="display:flex;margin-top:6px"><span class="lbl">💰 Tüm Siparişler<br><span style="font-size:11px;color:#94a3b8;font-weight:600">📦 ' + gCesit + ' çeşit · ' + gAdet + ' adet</span></span><span class="val">¥' + f(gY) + '<span style="font-size:0.62em;color:#a5b4fc;font-weight:700;margin-left:4px">· $' + f(gU) + '</span></span></div>';
+    html += '<div class="toplam5">' +
+        '<div class="t5-info">📦 ' + gCesit + ' çeşit · ' + gAdet + ' adet</div>' +
+        '<div class="r1"><span class="l1">💰 Tüm Siparişler</span><span class="v1">¥' + f(gY) + '<span class="usd" style="color:#a5b4fc">· $' + f(gU) + '</span></span></div>' +
+        '<div class="r2"><span class="l2">+ %5 dahil</span><span class="v2">¥' + f(gY * 1.05) + '<span class="usd" style="color:#fde68a">· $' + f(gU * 1.05) + '</span></span></div>' +
+    '</div>';
     el.innerHTML = html;
 }
 function fisAc(id) {
