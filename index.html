@@ -48,7 +48,15 @@ body {
 .gram-toggle label { flex: 1; text-align: center; padding: 10px; font-size: 14px; color: #94a3b8; border-radius: 9px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
 .gram-toggle input:checked + label { background: linear-gradient(135deg,#3b82f6,#6366f1); color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.35); }
 
-.urun-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.urun-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.adet-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.adet-input { width: 92px; flex-shrink: 0; }
+.adet-input input { background: #0b1120; border: 1.5px solid #1e293b; border-radius: 10px; padding: 10px; color: #f1f5f9; font-size: 15px; text-align: center; width: 100%; font-weight: 700; -webkit-appearance: none; }
+.adet-input input:focus { outline: none; border-color: #34d399; }
+.adet-input input::placeholder { color: #475569; font-weight: 400; }
+.toplam-kutu { flex: 1; background: rgba(52,211,153,0.1); border-radius: 10px; padding: 7px 12px; display: flex; align-items: center; justify-content: space-between; }
+.toplam-kutu .lbl { font-size: 11px; color: #6ee7b7; font-weight: 600; }
+.toplam-kutu .val { font-size: 17px; font-weight: 800; color: #34d399; }
 .btn-kaydet {
     width: 100%; background: linear-gradient(135deg,#3b82f6,#6366f1); border: none; color: white; border-radius: 12px;
     padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
@@ -160,10 +168,9 @@ body {
             <input type="radio" name="gramTipi" id="gramDuzine" value="12">
             <label for="gramDuzine">Düzine</label>
         </div>
-        <div class="urun-row3">
+        <div class="urun-row2">
             <div class="field"><label>Gram</label><input type="number" id="gramInput" inputmode="decimal" placeholder="250"></div>
             <div class="field"><label>Fiyat (¥)</label><input type="number" id="fiyatInput" inputmode="decimal" placeholder="12.5"></div>
-            <div class="field"><label>Adet</label><input type="number" id="adetInput" inputmode="numeric" placeholder="1"></div>
         </div>
         <button class="btn-kaydet" onclick="ekle()">＋ Ürün Ekle</button>
     </div>
@@ -304,7 +311,7 @@ function fisToplami(liste, k) {
     var t = 0;
     for (var i = 0; i < liste.length; i++) {
         var h = hesapla(liste[i].gram, liste[i].fiyat, liste[i].gb || 1, k);
-        t += h.ortGuclu * (liste[i].adet || 1);
+        t += h.ortGuclu * (liste[i].adet || 0);
     }
     return t;
 }
@@ -316,16 +323,20 @@ function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&l
 function ekle() {
     var gram = parseFloat(document.getElementById('gramInput').value);
     var fiyat = parseFloat(document.getElementById('fiyatInput').value);
-    var adet = parseInt(document.getElementById('adetInput').value) || 1;
-    if (adet < 1) adet = 1;
     if (!gram || !fiyat) { alert('Gram ve fiyat girin.'); return; }
     var gb = document.querySelector('input[name="gramTipi"]:checked').value == '12' ? 12 : 1;
 
-    urunler.push({ gram: gram, fiyat: fiyat, adet: adet, gb: gb, img: null });
+    urunler.push({ gram: gram, fiyat: fiyat, adet: null, gb: gb, img: null });
     document.getElementById('gramInput').value = '';
     document.getElementById('fiyatInput').value = '';
-    document.getElementById('adetInput').value = '';
     document.getElementById('gramInput').focus();
+    urunlerKaydet();
+    render();
+}
+function adetDegistir(i, val) {
+    var a = parseInt(val) || 0;
+    if (a < 0) a = 0;
+    urunler[i].adet = a || null;
     urunlerKaydet();
     render();
 }
@@ -343,7 +354,7 @@ function temizle() {
 
 /* ---------- Ürün kartı HTML (paylaşılan) ---------- */
 function urunKartHtml(u, i, k, editable) {
-    var adet = u.adet || 1;
+    var adet = u.adet || 0;
     var h = hesapla(u.gram, u.fiyat, u.gb || 1, k);
     var toplam = h.ortGuclu * adet;
     var s = '<div class="urun-item"><div class="urun-head">';
@@ -351,11 +362,18 @@ function urunKartHtml(u, i, k, editable) {
     else if (editable) s += '<button class="foto-ekle" onclick="fotoTiklandi(' + i + ')">📷</button>';
     else s += '<div class="foto-ekle" style="cursor:default">🖼️</div>';
     s += '<div class="urun-badge">' + (i+1) + '</div>';
-    s += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + '¥</b> · <b>' + adet + ' adet</b></div>';
+    s += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + '¥</b></div>';
     if (editable) s += '<button class="btn-sil" onclick="sil(' + i + ')">✕</button>';
     s += '</div>';
-    s += '<div class="main-result"><span class="lbl">Toplam (' + adet + ' adet)</span><span class="val">₺' + f(toplam) + '</span></div>';
-    s += '<div class="birim-satir">Birim fiyat: <b style="color:#cbd5e1">₺' + f(h.ortGuclu) + '</b></div>';
+    s += '<div class="main-result"><span class="lbl">Birim Fiyat</span><span class="val">₺' + f(h.ortGuclu) + '</span></div>';
+    s += '<div class="adet-row">';
+    if (editable) {
+        s += '<div class="adet-input"><input type="number" inputmode="numeric" placeholder="Adet" value="' + (u.adet ? u.adet : '') + '" onchange="adetDegistir(' + i + ',this.value)"></div>';
+    } else {
+        s += '<div class="adet-input" style="width:auto"><b style="color:#f1f5f9;font-size:15px">' + adet + ' adet</b></div>';
+    }
+    s += '<div class="toplam-kutu"><span class="lbl">Toplam</span><span class="val">' + (adet > 0 ? '₺' + f(toplam) : '—') + '</span></div>';
+    s += '</div>';
     s += '<div class="row3">';
     s += '<div class="box"><div class="lbl">S</div><div class="val c-s">₺' + f(h.bS) + '</div></div>';
     s += '<div class="box"><div class="lbl">Z</div><div class="val c-z">₺' + f(h.bZ) + '</div></div>';
@@ -369,7 +387,7 @@ function render() {
     var list = document.getElementById('urunList');
     var k = getKurlar();
     if (urunler.length === 0) {
-        list.innerHTML = '<div class="empty"><div class="ico">📦</div><p>Bu fişe henüz ürün eklenmedi.<br>Gram, fiyat, adet girip <b>Ürün Ekle</b>.</p></div>';
+        list.innerHTML = '<div class="empty"><div class="ico">📦</div><p>Bu fişe henüz ürün eklenmedi.<br>Gram ve fiyat girip <b>Ürün Ekle</b>. Adedi sonra kartta girersin.</p></div>';
         document.getElementById('genelToplam').style.display = 'none';
         document.getElementById('actionsBar').style.display = 'none';
     } else {
@@ -473,11 +491,8 @@ function tabRozetGuncelle() {
 
 render();
 
-document.getElementById('adetInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') ekle();
-});
 document.getElementById('fiyatInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') document.getElementById('adetInput').focus();
+    if (e.key === 'Enter') ekle();
 });
 document.getElementById('gramInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') document.getElementById('fiyatInput').focus();
