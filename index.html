@@ -50,15 +50,14 @@ body {
 .gram-toggle label { flex: 1; text-align: center; padding: 10px; font-size: 14px; color: #94a3b8; border-radius: 9px; cursor: pointer; transition: all 0.2s; font-weight: 600; }
 .gram-toggle input:checked + label { background: linear-gradient(135deg,#3b82f6,#6366f1); color: white; box-shadow: 0 4px 12px rgba(59,130,246,0.35); }
 
-/* Ürün ekle row */
-.urun-row { display: flex; gap: 10px; align-items: flex-end; }
-.urun-row .field { flex: 1; }
-.btn-ekle {
-    background: linear-gradient(135deg,#3b82f6,#6366f1); border: none; color: white; border-radius: 12px;
-    padding: 0; font-size: 26px; cursor: pointer; height: 50px; min-width: 54px; display: flex;
-    align-items: center; justify-content: center; box-shadow: 0 6px 16px rgba(59,130,246,0.35); transition: transform 0.1s;
+/* Ürün ekle */
+.urun-row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.btn-kaydet {
+    width: 100%; background: linear-gradient(135deg,#3b82f6,#6366f1); border: none; color: white; border-radius: 12px;
+    padding: 14px; font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 6px 16px rgba(59,130,246,0.35); transition: transform 0.1s;
 }
-.btn-ekle:active { transform: scale(0.94); }
+.btn-kaydet:active { transform: scale(0.98); }
 
 /* Ürün listesi */
 .urun-list { margin-top: 4px; }
@@ -92,6 +91,12 @@ body {
 .empty { text-align: center; padding: 40px 20px; color: #475569; }
 .empty .ico { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
 .empty p { font-size: 13px; line-height: 1.5; }
+
+/* Birim satırı + genel toplam */
+.birim-satir { text-align: center; font-size: 12px; color: #94a3b8; margin: -2px 0 10px; }
+.genel-toplam { background: linear-gradient(135deg, rgba(52,211,153,0.15), rgba(16,185,129,0.1)); border: 1px solid rgba(52,211,153,0.3); border-radius: 14px; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.genel-toplam .lbl { font-size: 13px; color: #6ee7b7; font-weight: 700; }
+.genel-toplam .val { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
 
 /* Özet + temizle */
 .ozet { text-align: center; margin: 4px 0 12px; }
@@ -140,14 +145,20 @@ body {
         <input type="radio" name="gramTipi" id="gramDuzine" value="12">
         <label for="gramDuzine">Düzine</label>
     </div>
-    <div class="urun-row">
+    <div class="urun-row3">
         <div class="field"><label>Gram</label><input type="number" id="gramInput" inputmode="decimal" placeholder="250"></div>
         <div class="field"><label>Fiyat (¥)</label><input type="number" id="fiyatInput" inputmode="decimal" placeholder="12.5"></div>
-        <button class="btn-ekle" onclick="ekle()">+</button>
+        <div class="field"><label>Adet</label><input type="number" id="adetInput" inputmode="numeric" placeholder="1"></div>
     </div>
+    <button class="btn-kaydet" onclick="ekle()">＋ Kaydet</button>
 </div>
 
 <div id="urunList" class="urun-list"></div>
+
+<div class="genel-toplam" id="genelToplam" style="display:none">
+    <span class="lbl">💰 Genel Toplam</span>
+    <span class="val" id="genelToplamVal">₺0,00</span>
+</div>
 
 <div class="ozet" id="ozet" style="display:none">
     <span>Toplam <b id="ozetAdet">0</b> ürün</span>
@@ -274,11 +285,14 @@ function hesapla(gram, fiyat) {
 function ekle() {
     var gram = parseFloat(document.getElementById('gramInput').value);
     var fiyat = parseFloat(document.getElementById('fiyatInput').value);
+    var adet = parseInt(document.getElementById('adetInput').value) || 1;
+    if (adet < 1) adet = 1;
     if (!gram || !fiyat) { alert('Gram ve fiyat girin.'); return; }
 
-    urunler.push({ gram: gram, fiyat: fiyat, img: null });
+    urunler.push({ gram: gram, fiyat: fiyat, adet: adet, img: null });
     document.getElementById('gramInput').value = '';
     document.getElementById('fiyatInput').value = '';
+    document.getElementById('adetInput').value = '';
     document.getElementById('gramInput').focus();
     urunlerKaydet();
     render();
@@ -302,25 +316,31 @@ function f(n) { return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, max
 function render() {
     var list = document.getElementById('urunList');
     if (urunler.length === 0) {
-        list.innerHTML = '<div class="empty"><div class="ico">📦</div><p>Henüz ürün eklenmedi.<br>Gram ve fiyat girip <b>+</b> butonuna bas.</p></div>';
+        list.innerHTML = '<div class="empty"><div class="ico">📦</div><p>Henüz ürün eklenmedi.<br>Gram, fiyat, adet girip <b>Kaydet</b> butonuna bas.</p></div>';
+        document.getElementById('genelToplam').style.display = 'none';
         document.getElementById('ozet').style.display = 'none';
         document.getElementById('actionsBar').style.display = 'none';
         return;
     }
     var html = '';
+    var genelToplam = 0;
     for (var i = 0; i < urunler.length; i++) {
         var u = urunler[i];
+        var adet = u.adet || 1;
         var h = hesapla(u.gram, u.fiyat);
+        var toplam = h.ortGuclu * adet;
+        genelToplam += toplam;
         html += '<div class="urun-item">';
         html += '<div class="urun-head">';
         if (u.img) html += '<img class="urun-foto" src="' + u.img + '" onclick="fotoBuyut(' + i + ',event)">';
         else html += '<button class="foto-ekle" onclick="fotoTiklandi(' + i + ')">📷</button>';
         html += '<div class="urun-badge">' + (i+1) + '</div>';
-        html += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + ' ¥</b></div>';
+        html += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + '¥</b> · <b>' + adet + ' adet</b></div>';
         html += '<button class="btn-sil" onclick="sil(' + i + ')">✕</button>';
         html += '</div>';
 
-        html += '<div class="main-result"><span class="lbl">Ort. Fiyat</span><span class="val">₺' + f(h.ortGuclu) + '</span></div>';
+        html += '<div class="main-result"><span class="lbl">Toplam (' + adet + ' adet)</span><span class="val">₺' + f(toplam) + '</span></div>';
+        html += '<div class="birim-satir">Birim fiyat: <b style="color:#cbd5e1">₺' + f(h.ortGuclu) + '</b></div>';
 
         html += '<div class="row3">';
         html += '<div class="box"><div class="lbl">S</div><div class="val c-s">₺' + f(h.bS) + '</div></div>';
@@ -332,14 +352,23 @@ function render() {
     }
     list.innerHTML = html;
 
+    if (urunler.length > 1) {
+        document.getElementById('genelToplam').style.display = 'flex';
+        document.getElementById('genelToplamVal').textContent = '₺' + f(genelToplam);
+    } else {
+        document.getElementById('genelToplam').style.display = 'none';
+    }
     document.getElementById('ozet').style.display = 'block';
     document.getElementById('actionsBar').style.display = 'block';
     document.getElementById('ozetAdet').textContent = urunler.length;
 }
 render();
 
-document.getElementById('fiyatInput').addEventListener('keydown', function(e) {
+document.getElementById('adetInput').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') ekle();
+});
+document.getElementById('fiyatInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('adetInput').focus();
 });
 document.querySelectorAll('input[name="gramTipi"]').forEach(function(r) { r.addEventListener('change', render); });
 document.getElementById('gramInput').addEventListener('keydown', function(e) {
