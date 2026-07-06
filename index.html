@@ -101,6 +101,8 @@ body {
 .btn-fis { width: 100%; background: linear-gradient(135deg,#3b82f6,#6366f1); border: none; color: white; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(59,130,246,0.35); transition: transform 0.1s; margin-bottom: 8px; }
 .btn-fis:active { transform: scale(0.98); }
 .btn-temizle { width: 100%; background: transparent; border: none; color: #64748b; border-radius: 12px; padding: 8px; font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: underline; }
+.btn-yedek { flex: 1; background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); color: #93c5fd; border-radius: 10px; padding: 11px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-yedek:active { background: rgba(59,130,246,0.28); }
 
 /* Fiş kartı (Siparişler) */
 .fis-card { background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.1); border-radius: 16px; padding: 15px; margin-bottom: 10px; cursor: pointer; transition: transform 0.1s; }
@@ -142,7 +144,7 @@ body {
 <!-- ============ ÜRÜN EKLE ============ -->
 <div id="view-urun">
     <div class="ayar-toggle">
-        <button onclick="toggleKur()">⚙️ Kur & Nakliye Ayarları</button>
+        <button onclick="toggleKur()">⚙️ Kur, Nakliye & Yedek</button>
     </div>
 
     <div class="card" id="kurCard" style="display:none">
@@ -156,6 +158,11 @@ body {
             <div class="field"><label>Z</label><input type="number" id="zNak" value="52" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
             <div class="field"><label>N</label><input type="number" id="nNak" value="42" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
             <div class="field"><label>S</label><input type="number" id="sNak" value="48" step="0.5" inputmode="decimal" onchange="kurKaydet()"></div>
+        </div>
+        <div class="card-title" style="margin-top:16px">💾 Yedek (Drive'a kaydet)</div>
+        <div style="display:flex;gap:8px">
+            <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
+            <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
     </div>
 
@@ -216,6 +223,7 @@ body {
 </nav>
 
 <input type="file" accept="image/*" id="fotoInput" style="display:none" onchange="fotoYuklendi(this)">
+<input type="file" accept=".json,application/json" id="yedekInput" style="display:none" onchange="geriYukle(this)">
 
 <div class="foto-modal" id="fotoModal" onclick="this.classList.remove('acik')">
     <img id="fotoModalImg" src="">
@@ -268,6 +276,48 @@ fislerYukle();
 function toggleKur() {
     var c = document.getElementById('kurCard');
     c.style.display = c.style.display === 'none' ? 'block' : 'none';
+}
+
+/* ---------- Yedek (dışa / içe aktar) ---------- */
+function kurlarRaw() {
+    var o = {};
+    for (var i = 0; i < _kurFields.length; i++) o[_kurFields[i]] = document.getElementById(_kurFields[i]).value;
+    return o;
+}
+function yedekAl() {
+    var veri = { v: 1, tarih: new Date().toISOString(), kurlar: kurlarRaw(), urunler: urunler, fisler: fisler };
+    var blob = new Blob([JSON.stringify(veri)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'sok-nokta-yedek-' + new Date().toLocaleDateString('tr-TR').replace(/[.\/]/g, '-') + '.json';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+}
+function geriYukle(input) {
+    if (!input.files || !input.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var veri;
+        try { veri = JSON.parse(e.target.result); }
+        catch(err) { alert('Dosya okunamadı. Geçerli bir yedek dosyası seçin.'); input.value = ''; return; }
+        if (!confirm('Yedek geri yüklenecek. Mevcut ürün, fiş ve kurların bununla DEĞİŞECEK. Devam edilsin mi?')) { input.value = ''; return; }
+        try {
+            if (veri.kurlar) {
+                for (var i = 0; i < _kurFields.length; i++) {
+                    if (veri.kurlar[_kurFields[i]] !== undefined) document.getElementById(_kurFields[i]).value = veri.kurlar[_kurFields[i]];
+                }
+                localStorage.setItem('smh_kurlar', JSON.stringify(kurlarRaw()));
+            }
+            urunler = Array.isArray(veri.urunler) ? veri.urunler : [];
+            fisler = Array.isArray(veri.fisler) ? veri.fisler : [];
+            urunlerKaydet(); fislerKaydet();
+            onGirisDegis(); renderFis(); tabRozetGuncelle();
+            alert('✅ Yedek geri yüklendi.\n' + fisler.length + ' kayıtlı sipariş, ' + urunler.length + ' fiş ürünü.');
+        } catch(err2) { alert('Geri yükleme sırasında hata oldu.'); }
+        input.value = '';
+    };
+    reader.readAsText(input.files[0]);
 }
 
 /* ---------- Fotoğraf ---------- */
