@@ -92,6 +92,13 @@ body {
 .satis-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding: 9px 12px; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.22); border-radius: 10px; font-size: 12px; color: #c4b5fd; }
 .satis-row b { color: #f1f5f9; font-size: 14px; font-weight: 700; }
 
+/* Sola kaydır → Sil */
+.swipe-wrap { position: relative; overflow: hidden; border-radius: 16px; margin-bottom: 12px; background: #dc2626; }
+.swipe-wrap .urun-item, .swipe-wrap .fis-card { margin-bottom: 0; }
+.swipe-sil { position: absolute; top: 0; right: 0; bottom: 0; width: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: white; font-weight: 700; font-size: 12px; cursor: pointer; background: #dc2626; }
+.swipe-sil .ico { font-size: 20px; }
+.swipe-ic { position: relative; transform: translateX(0); transition: transform 0.2s ease; background: #0b1120; will-change: transform; }
+
 .empty { text-align: center; padding: 40px 20px; color: #475569; }
 .empty .ico { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
 .empty p { font-size: 13px; line-height: 1.5; }
@@ -475,6 +482,7 @@ function urunKartHtml(u, i, k, editable) {
     s += '</div>';
     s += '<div class="satis-row"><span>Satış birim <b>₺' + f(h.ortGuclu) + '</b></span><span>' + (adet > 0 ? 'Toplam <b>₺' + f(satisToplam) + '</b>' : '') + '</span></div>';
     s += '</div>';
+    if (editable) return '<div class="swipe-wrap"><div class="swipe-sil" onclick="sil(' + i + ')"><span class="ico">🗑️</span>Sil</div><div class="swipe-ic">' + s + '</div></div>';
     return s;
 }
 
@@ -486,6 +494,7 @@ function adetDegistir(i, val) {
     renderFis();
 }
 function sil(idx) {
+    if (!confirm('Bu ürün silinsin mi?')) return;
     urunler.splice(idx, 1);
     urunlerKaydet();
     renderFis();
@@ -514,6 +523,7 @@ function renderFis() {
         document.getElementById('fisToplamKutu').innerHTML = toplam5Rows(urunler, k, '🧾 Fiş Toplamı');
         document.getElementById('fisToplamKutu').style.display = 'block';
         document.getElementById('fisActions').style.display = 'block';
+        swipeKur();
     }
 }
 
@@ -556,10 +566,10 @@ function fislerRender() {
         var fy = fisYuan(fs.urunler);
         gY += fy; gU += yuanUsd(fy, fs.kurlar || {});
         gCesit += fs.urunler.length; gAdet += toplamAdet(fs.urunler);
-        html += '<div class="fis-card" onclick="fisAc(' + fs.id + ')">';
+        html += '<div class="swipe-wrap"><div class="swipe-sil" onclick="fisSil(' + fs.id + ')"><span class="ico">🗑️</span>Sil</div><div class="swipe-ic"><div class="fis-card" onclick="fisAc(' + fs.id + ')">';
         html += '<div class="fis-ust"><span class="fis-ad">🧾 ' + escapeHtml(fs.ad) + '</span><span class="fis-tarih">' + fs.tarih + '</span></div>';
         html += '<div class="fis-alt"><span class="adet">' + fs.urunler.length + ' çeşit · ' + toplamAdet(fs.urunler) + ' adet</span><span class="fis-toplam">' + yuanUsdStr(fy, fs.kurlar || {}) + '</span></div>';
-        html += '</div>';
+        html += '</div></div></div>';
     }
     html += '<div class="toplam5">' +
         '<div class="t5-info">📦 ' + gCesit + ' çeşit · ' + gAdet + ' adet</div>' +
@@ -567,6 +577,7 @@ function fislerRender() {
         '<div class="r2"><span class="l2">+ %5 dahil</span><span class="v2">¥' + f(gY * 1.05) + '<span class="usd" style="color:#fde68a">· $' + f(gU * 1.05) + '</span></span></div>' +
     '</div>';
     el.innerHTML = html;
+    swipeKur();
 }
 function fisAc(id) {
     var fs = null;
@@ -595,6 +606,48 @@ function fisSil(id) {
     fislerKaydet();
     tabRozetGuncelle();
     fisGeri();
+}
+
+/* ---------- Sola kaydır → Sil (dokunmatik) ---------- */
+function swipeKur() {
+    document.querySelectorAll('.swipe-ic').forEach(function(el) {
+        if (el._swipeInit) return;
+        el._swipeInit = true;
+        var startX = 0, startY = 0, base = 0, lastTx = 0, dragging = false, moved = false, yatay = false;
+        el.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX; startY = e.touches[0].clientY;
+            base = el.classList.contains('acik') ? -88 : 0;
+            dragging = true; moved = false; yatay = false;
+            el.style.transition = 'none';
+        }, { passive: true });
+        el.addEventListener('touchmove', function(e) {
+            if (!dragging) return;
+            var dx = e.touches[0].clientX - startX, dy = e.touches[0].clientY - startY;
+            if (!yatay && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8) yatay = true;
+            if (!yatay) return;
+            moved = true;
+            var tx = base + dx;
+            if (tx > 0) tx = 0;
+            if (tx < -110) tx = -110;
+            lastTx = tx;
+            el.style.transform = 'translateX(' + tx + 'px)';
+        }, { passive: true });
+        el.addEventListener('touchend', function() {
+            if (!dragging) return;
+            dragging = false;
+            el.style.transition = 'transform 0.2s ease';
+            if (lastTx < -44) { el.classList.add('acik'); el.style.transform = 'translateX(-88px)'; }
+            else { el.classList.remove('acik'); el.style.transform = 'translateX(0)'; lastTx = 0; }
+        });
+        // Kaydırma yapıldıysa veya açıkken tıklamayı engelle (fiş açılmasın / kapansın)
+        el.addEventListener('click', function(e) {
+            if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; return; }
+            if (el.classList.contains('acik')) {
+                e.stopPropagation(); e.preventDefault();
+                el.classList.remove('acik'); el.style.transform = 'translateX(0)'; lastTx = 0;
+            }
+        }, true);
+    });
 }
 
 /* ---------- Sekmeler ---------- */
