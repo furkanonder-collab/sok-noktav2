@@ -193,7 +193,7 @@ body {
 <div id="view-fis" style="display:none">
     <div id="fisUrunList" class="urun-list"></div>
     <div class="genel-toplam" id="fisToplamKutu" style="display:none">
-        <span class="lbl">🧾 Fiş Toplamı</span>
+        <span class="lbl">🧾 Fiş Toplamı (¥)</span>
         <span class="val" id="fisToplamVal">¥0,00</span>
     </div>
     <div id="fisActions" style="display:none">
@@ -328,14 +328,6 @@ function hesapla(gram, fiyat, gb, k) {
     var bZ = mZ * 2, bN = mN * 2, bS = mS * 2;
     return { bZ: bZ, bN: bN, bS: bS, ortGuclu: (bZ + bN + bS) / 3 };
 }
-function fisToplami(liste, k) {
-    var t = 0;
-    for (var i = 0; i < liste.length; i++) {
-        var h = hesapla(liste[i].gram, liste[i].fiyat, liste[i].gb || 1, k);
-        t += h.ortGuclu * (liste[i].adet || 0);
-    }
-    return t;
-}
 function guncelGb() { return document.querySelector('input[name="gramTipi"]:checked').value == '12' ? 12 : 1; }
 // Tedarikçiye ödenen Yuan = Σ(fiyat × adet)
 function fisYuan(liste) {
@@ -391,14 +383,13 @@ function siparisVer() {
 /* ---------- Fiş (sepet) ürün kartı ---------- */
 function urunKartHtml(u, i, k, editable) {
     var adet = u.adet || 0;
-    var h = hesapla(u.gram, u.fiyat, u.gb || 1, k);
-    var toplam = h.ortGuclu * adet;
+    var lineYuan = (u.fiyat || 0) * adet;
     var s = '<div class="urun-item"><div class="urun-head">';
     if (u.img) s += '<img class="urun-foto" src="' + u.img + '" onclick="fotoBuyutEl(this)">';
     else if (editable) s += '<button class="foto-ekle" onclick="fotoTiklandi(' + i + ')">📷</button>';
     else s += '<div class="foto-ekle" style="cursor:default">🖼️</div>';
     s += '<div class="urun-badge">' + (i+1) + '</div>';
-    s += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + '¥</b> · Birim ₺' + f(h.ortGuclu) + '</div>';
+    s += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + '¥</b></div>';
     if (editable) s += '<button class="btn-sil" onclick="sil(' + i + ')">✕</button>';
     s += '</div>';
     s += '<div class="kart-adet-row">';
@@ -407,7 +398,7 @@ function urunKartHtml(u, i, k, editable) {
     } else {
         s += '<div class="kart-adet" style="width:auto"><b style="color:#f1f5f9;font-size:15px">' + adet + ' adet</b></div>';
     }
-    s += '<div class="toplam-kutu"><span class="lbl">Toplam</span><span class="val">' + (adet > 0 ? '₺' + f(toplam) : '—') + '</span></div>';
+    s += '<div class="toplam-kutu"><span class="lbl">Toplam (¥×adet)</span><span class="val">' + (adet > 0 ? yuanUsdStr(lineYuan, k) : '—') + '</span></div>';
     s += '</div></div>';
     return s;
 }
@@ -465,7 +456,7 @@ function fisKaydet() {
         tarih: new Date().toLocaleDateString('tr-TR'),
         kurlar: k,
         urunler: urunler,
-        toplam: fisToplami(urunler, k)
+        toplam: fisYuan(urunler)
     });
     fislerKaydet();
     urunler = [];
