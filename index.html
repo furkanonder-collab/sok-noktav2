@@ -459,7 +459,7 @@ function siparisVer() {
 }
 
 /* ---------- Fiş (sepet) ürün kartı ---------- */
-function urunKartHtml(u, i, k, editable) {
+function urunKartHtml(u, i, k, editable, silOnclick) {
     var adet = u.adet || 0;
     var lineYuan = (u.fiyat || 0) * adet;
     var h = hesapla(u.gram, u.fiyat, u.gb || 1, k);
@@ -482,7 +482,7 @@ function urunKartHtml(u, i, k, editable) {
     s += '</div>';
     s += '<div class="satis-row"><span>Satış birim <b>₺' + f(h.ortGuclu) + '</b></span><span>' + (adet > 0 ? 'Toplam <b>₺' + f(satisToplam) + '</b>' : '') + '</span></div>';
     s += '</div>';
-    if (editable) return '<div class="swipe-wrap"><div class="swipe-sil" onclick="sil(' + i + ')"><span class="ico">🗑️</span>Sil</div><div class="swipe-ic">' + s + '</div></div>';
+    if (silOnclick) return '<div class="swipe-wrap"><div class="swipe-sil" onclick="' + silOnclick + '"><span class="ico">🗑️</span>Sil</div><div class="swipe-ic">' + s + '</div></div>';
     return s;
 }
 
@@ -518,7 +518,7 @@ function renderFis() {
         document.getElementById('fisActions').style.display = 'none';
     } else {
         var html = '';
-        for (var i = 0; i < urunler.length; i++) html += urunKartHtml(urunler[i], i, k, true);
+        for (var i = 0; i < urunler.length; i++) html += urunKartHtml(urunler[i], i, k, true, 'sil(' + i + ')');
         list.innerHTML = html;
         document.getElementById('fisToplamKutu').innerHTML = toplam5Rows(urunler, k, '🧾 Fiş Toplamı');
         document.getElementById('fisToplamKutu').style.display = 'block';
@@ -587,12 +587,13 @@ function fisAc(id) {
     var html = '';
     html += '<button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
     html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + '</h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
-    for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false);
+    for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false, 'fisUrunSil(' + fs.id + ',' + j + ')');
     html += '<div class="toplam5">' + toplam5Rows(fs.urunler, k, '💰 Fiş Toplamı') + '</div>';
     html += '<button class="btn-fissil" onclick="fisSil(' + fs.id + ')">🗑️ Bu Fişi Sil</button>';
     document.getElementById('fisDetay').innerHTML = html;
     document.getElementById('fislerList').style.display = 'none';
     document.getElementById('fisDetay').style.display = 'block';
+    swipeKur();
     window.scrollTo(0, 0);
 }
 function fisGeri() {
@@ -606,6 +607,26 @@ function fisSil(id) {
     fislerKaydet();
     tabRozetGuncelle();
     fisGeri();
+}
+// Kayıtlı fişin içinden ürün sil (onaylı)
+function fisUrunSil(fisId, urunIdx) {
+    if (!confirm('Bu ürün fişten silinsin mi?')) return;
+    var fs = null;
+    for (var i = 0; i < fisler.length; i++) if (fisler[i].id === fisId) fs = fisler[i];
+    if (!fs) return;
+    fs.urunler.splice(urunIdx, 1);
+    fs.toplam = fisYuan(fs.urunler);
+    fislerKaydet();
+    tabRozetGuncelle();
+    if (fs.urunler.length === 0) {
+        for (var j = 0; j < fisler.length; j++) { if (fisler[j].id === fisId) { fisler.splice(j, 1); break; } }
+        fislerKaydet();
+        tabRozetGuncelle();
+        alert('Fişte ürün kalmadı, fiş silindi.');
+        fisGeri();
+        return;
+    }
+    fisAc(fisId);
 }
 
 /* ---------- Sola kaydır → Sil (dokunmatik) ---------- */
@@ -639,7 +660,6 @@ function swipeKur() {
             if (lastTx < -44) { el.classList.add('acik'); el.style.transform = 'translateX(-88px)'; }
             else { el.classList.remove('acik'); el.style.transform = 'translateX(0)'; lastTx = 0; }
         });
-        // Kaydırma yapıldıysa veya açıkken tıklamayı engelle (fiş açılmasın / kapansın)
         el.addEventListener('click', function(e) {
             if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; return; }
             if (el.classList.contains('acik')) {
