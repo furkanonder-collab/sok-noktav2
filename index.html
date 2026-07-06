@@ -194,7 +194,7 @@ body {
     <div id="fisUrunList" class="urun-list"></div>
     <div class="genel-toplam" id="fisToplamKutu" style="display:none">
         <span class="lbl">🧾 Fiş Toplamı</span>
-        <span class="val" id="fisToplamVal">₺0,00</span>
+        <span class="val" id="fisToplamVal">¥0,00</span>
     </div>
     <div id="fisActions" style="display:none">
         <button class="btn-fis" onclick="fisKaydet()">🧾 Fişi Kaydet (Siparişlere Ekle)</button>
@@ -337,6 +337,17 @@ function fisToplami(liste, k) {
     return t;
 }
 function guncelGb() { return document.querySelector('input[name="gramTipi"]:checked').value == '12' ? 12 : 1; }
+// Tedarikçiye ödenen Yuan = Σ(fiyat × adet)
+function fisYuan(liste) {
+    var t = 0;
+    for (var i = 0; i < liste.length; i++) t += (liste[i].fiyat || 0) * (liste[i].adet || 0);
+    return t;
+}
+// Yuan → USD ($ = ¥ × RMB kuru ÷ USD kuru)
+function yuanUsd(yuan, k) { return yuan * (k.rnb || 0) / (k.usd || 1); }
+function yuanUsdStr(yuan, k) {
+    return '¥' + f(yuan) + '<span style="font-size:0.62em;color:#a5b4fc;font-weight:700;margin-left:4px">· $' + f(yuanUsd(yuan, k)) + '</span>';
+}
 
 function f(n) { return n.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -434,7 +445,7 @@ function renderFis() {
         var html = '';
         for (var i = 0; i < urunler.length; i++) html += urunKartHtml(urunler[i], i, k, true);
         list.innerHTML = html;
-        document.getElementById('fisToplamVal').textContent = '₺' + f(fisToplami(urunler, k));
+        document.getElementById('fisToplamVal').innerHTML = yuanUsdStr(fisYuan(urunler), k);
         document.getElementById('fisToplamKutu').style.display = 'flex';
         document.getElementById('fisActions').style.display = 'block';
     }
@@ -473,16 +484,17 @@ function fislerRender() {
         return;
     }
     var html = '';
-    var genelTum = 0;
+    var gY = 0, gU = 0;
     for (var i = fisler.length - 1; i >= 0; i--) {
         var fs = fisler[i];
-        genelTum += fs.toplam;
+        var fy = fisYuan(fs.urunler);
+        gY += fy; gU += yuanUsd(fy, fs.kurlar || {});
         html += '<div class="fis-card" onclick="fisAc(' + fs.id + ')">';
         html += '<div class="fis-ust"><span class="fis-ad">🧾 ' + escapeHtml(fs.ad) + '</span><span class="fis-tarih">' + fs.tarih + '</span></div>';
-        html += '<div class="fis-alt"><span class="adet">' + fs.urunler.length + ' ürün</span><span class="fis-toplam">₺' + f(fs.toplam) + '</span></div>';
+        html += '<div class="fis-alt"><span class="adet">' + fs.urunler.length + ' ürün</span><span class="fis-toplam">' + yuanUsdStr(fy, fs.kurlar || {}) + '</span></div>';
         html += '</div>';
     }
-    html += '<div class="genel-toplam" style="display:flex;margin-top:6px"><span class="lbl">💰 Tüm Siparişler</span><span class="val">₺' + f(genelTum) + '</span></div>';
+    html += '<div class="genel-toplam" style="display:flex;margin-top:6px"><span class="lbl">💰 Tüm Siparişler</span><span class="val">¥' + f(gY) + '<span style="font-size:0.62em;color:#a5b4fc;font-weight:700;margin-left:4px">· $' + f(gU) + '</span></span></div>';
     el.innerHTML = html;
 }
 function fisAc(id) {
@@ -494,7 +506,7 @@ function fisAc(id) {
     html += '<button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
     html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + '</h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
     for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false);
-    html += '<div class="genel-toplam" style="display:flex"><span class="lbl">💰 Fiş Toplamı</span><span class="val">₺' + f(fs.toplam) + '</span></div>';
+    html += '<div class="genel-toplam" style="display:flex"><span class="lbl">💰 Fiş Toplamı</span><span class="val">' + yuanUsdStr(fisYuan(fs.urunler), k) + '</span></div>';
     html += '<button class="btn-fissil" onclick="fisSil(' + fs.id + ')">🗑️ Bu Fişi Sil</button>';
     document.getElementById('fisDetay').innerHTML = html;
     document.getElementById('fislerList').style.display = 'none';
