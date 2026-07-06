@@ -64,11 +64,14 @@ body {
 .urun-list { margin-top: 4px; }
 .urun-item { background: rgba(15,23,42,0.85); border: 1px solid rgba(148,163,184,0.08); border-radius: 16px; padding: 14px; margin-bottom: 12px; position: relative; animation: slideIn 0.25s ease; }
 @keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.urun-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-.urun-badge { background: linear-gradient(135deg,#3b82f6,#6366f1); color: white; font-size: 12px; font-weight: 700; width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.urun-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.urun-foto { width: 52px; height: 52px; border-radius: 11px; object-fit: cover; cursor: pointer; flex-shrink: 0; border: 1px solid rgba(148,163,184,0.15); }
+.foto-ekle { width: 52px; height: 52px; border-radius: 11px; border: 1.5px dashed #334155; background: #0b1120; color: #64748b; font-size: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; padding: 0; }
+.foto-ekle:active { background: #1e293b; }
+.urun-badge { background: linear-gradient(135deg,#3b82f6,#6366f1); color: white; font-size: 12px; font-weight: 700; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .urun-info { font-size: 14px; color: #cbd5e1; }
 .urun-info b { color: #f1f5f9; font-weight: 700; }
-.btn-sil { margin-left: auto; background: rgba(239,68,68,0.12); border: none; color: #f87171; font-size: 15px; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; }
+.btn-sil { margin-left: auto; background: rgba(239,68,68,0.12); border: none; color: #f87171; font-size: 15px; cursor: pointer; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.2s; flex-shrink: 0; }
 .btn-sil:active { background: rgba(239,68,68,0.28); }
 
 /* Ana sonuç (Ort.) */
@@ -96,6 +99,11 @@ body {
 .ozet b { color: #94a3b8; }
 .btn-temizle { width: 100%; background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.2); color: #f87171; border-radius: 12px; padding: 12px; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
 .btn-temizle:active { background: rgba(153,27,27,0.3); }
+
+/* Büyük foto görüntüleyici */
+.foto-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.foto-modal.acik { display: flex; }
+.foto-modal img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
 </style>
 </head>
 <body>
@@ -149,9 +157,16 @@ body {
     <button class="btn-temizle" onclick="temizle()">🗑️ Tümünü Temizle</button>
 </div>
 
+<input type="file" accept="image/*" id="fotoInput" style="display:none" onchange="fotoYuklendi(this)">
+
+<div class="foto-modal" id="fotoModal" onclick="this.classList.remove('acik')">
+    <img id="fotoModalImg" src="">
+</div>
+
 <script>
 var urunler = [];
 
+/* ---------- Kurlar (localStorage) ---------- */
 var _kurFields = ['rnb','usd','zNak','nNak','sNak'];
 function kurKaydet() {
     try {
@@ -170,13 +185,71 @@ function kurYukle() {
         }
     } catch(e) {}
 }
+
+/* ---------- Ürünler (localStorage) ---------- */
+function urunlerKaydet() {
+    try { localStorage.setItem('smh_urunler', JSON.stringify(urunler)); }
+    catch(e) { alert('Depolama alanı dolmuş olabilir. Bazı ürünleri veya fotoğrafları silin.'); }
+}
+function urunlerYukle() {
+    try {
+        var a = JSON.parse(localStorage.getItem('smh_urunler'));
+        if (Array.isArray(a)) urunler = a;
+    } catch(e) {}
+}
+
 kurYukle();
+urunlerYukle();
 
 function toggleKur() {
     var c = document.getElementById('kurCard');
     c.style.display = c.style.display === 'none' ? 'block' : 'none';
 }
 
+/* ---------- Fotoğraf ---------- */
+function resizeImage(file, cb) {
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+        var img = new Image();
+        img.onload = function() {
+            var max = 400, w = img.width, h = img.height;
+            if (w > h) { if (w > max) { h = Math.round(h * max / w); w = max; } }
+            else { if (h > max) { w = Math.round(w * max / h); h = max; } }
+            var cv = document.createElement('canvas');
+            cv.width = w; cv.height = h;
+            cv.getContext('2d').drawImage(img, 0, 0, w, h);
+            try { cb(cv.toDataURL('image/jpeg', 0.7)); } catch(e) { cb(ev.target.result); }
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+var _fotoHedef = -1;
+function fotoTiklandi(i) {
+    _fotoHedef = i;
+    var inp = document.getElementById('fotoInput');
+    inp.value = '';
+    inp.click();
+}
+function fotoYuklendi(input) {
+    if (!input.files || !input.files[0]) return;
+    resizeImage(input.files[0], function(dataUrl) {
+        if (_fotoHedef >= 0 && _fotoHedef < urunler.length) {
+            urunler[_fotoHedef].img = dataUrl;
+            urunlerKaydet();
+            render();
+        }
+    });
+}
+function fotoBuyut(i, ev) {
+    ev.stopPropagation();
+    if (!urunler[i] || !urunler[i].img) return;
+    document.getElementById('fotoModalImg').src = urunler[i].img;
+    document.getElementById('fotoModal').classList.add('acik');
+}
+
+/* ---------- Hesaplama ---------- */
 function hesapla(gram, fiyat) {
     var rnb = parseFloat(document.getElementById('rnb').value) || 0;
     var usd = parseFloat(document.getElementById('usd').value) || 0;
@@ -203,21 +276,24 @@ function ekle() {
     var fiyat = parseFloat(document.getElementById('fiyatInput').value);
     if (!gram || !fiyat) { alert('Gram ve fiyat girin.'); return; }
 
-    urunler.push({ gram: gram, fiyat: fiyat });
+    urunler.push({ gram: gram, fiyat: fiyat, img: null });
     document.getElementById('gramInput').value = '';
     document.getElementById('fiyatInput').value = '';
     document.getElementById('gramInput').focus();
+    urunlerKaydet();
     render();
 }
 
 function sil(idx) {
     urunler.splice(idx, 1);
+    urunlerKaydet();
     render();
 }
 
 function temizle() {
     if (!confirm('Tüm ürünler silinsin mi?')) return;
     urunler = [];
+    urunlerKaydet();
     render();
 }
 
@@ -237,9 +313,11 @@ function render() {
         var h = hesapla(u.gram, u.fiyat);
         html += '<div class="urun-item">';
         html += '<div class="urun-head">';
+        if (u.img) html += '<img class="urun-foto" src="' + u.img + '" onclick="fotoBuyut(' + i + ',event)">';
+        else html += '<button class="foto-ekle" onclick="fotoTiklandi(' + i + ')">📷</button>';
         html += '<div class="urun-badge">' + (i+1) + '</div>';
         html += '<div class="urun-info"><b>' + u.gram + 'g</b> · <b>' + u.fiyat + ' ¥</b></div>';
-        html += '<button class="btn-sil" onclick="sil('+i+')">✕</button>';
+        html += '<button class="btn-sil" onclick="sil(' + i + ')">✕</button>';
         html += '</div>';
 
         html += '<div class="main-result"><span class="lbl">Ort. Fiyat</span><span class="val">₺' + f(h.ortGuclu) + '</span></div>';
