@@ -89,6 +89,8 @@ body {
 .toplam-kutu { flex: 1; background: rgba(52,211,153,0.1); border-radius: 10px; padding: 9px 12px; display: flex; align-items: center; justify-content: space-between; }
 .toplam-kutu .lbl { font-size: 11px; color: #6ee7b7; font-weight: 600; }
 .toplam-kutu .val { font-size: 17px; font-weight: 800; color: #34d399; }
+.satis-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding: 9px 12px; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.22); border-radius: 10px; font-size: 12px; color: #c4b5fd; }
+.satis-row b { color: #f1f5f9; font-size: 14px; font-weight: 700; }
 
 .empty { text-align: center; padding: 40px 20px; color: #475569; }
 .empty .ico { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
@@ -434,6 +436,8 @@ function siparisVer() {
 function urunKartHtml(u, i, k, editable) {
     var adet = u.adet || 0;
     var lineYuan = (u.fiyat || 0) * adet;
+    var h = hesapla(u.gram, u.fiyat, u.gb || 1, k);
+    var satisToplam = h.ortGuclu * adet;
     var s = '<div class="urun-item"><div class="urun-head">';
     if (u.img) s += '<img class="urun-foto" src="' + u.img + '" onclick="fotoBuyutEl(this)">';
     else if (editable) s += '<button class="foto-ekle" onclick="fotoTiklandi(' + i + ')">📷</button>';
@@ -448,8 +452,10 @@ function urunKartHtml(u, i, k, editable) {
     } else {
         s += '<div class="kart-adet" style="width:auto"><b style="color:#f1f5f9;font-size:15px">' + adet + ' adet</b></div>';
     }
-    s += '<div class="toplam-kutu"><span class="lbl">Toplam (¥×adet)</span><span class="val">' + (adet > 0 ? yuanUsdStr(lineYuan, k) : '—') + '</span></div>';
-    s += '</div></div>';
+    s += '<div class="toplam-kutu"><span class="lbl">Alış (¥×adet)</span><span class="val">' + (adet > 0 ? yuanUsdStr(lineYuan, k) : '—') + '</span></div>';
+    s += '</div>';
+    s += '<div class="satis-row"><span>Satış birim <b>₺' + f(h.ortGuclu) + '</b></span><span>' + (adet > 0 ? 'Toplam <b>₺' + f(satisToplam) + '</b>' : '') + '</span></div>';
+    s += '</div>';
     return s;
 }
 
