@@ -101,6 +101,25 @@ body {
 .swipe-sil { position: absolute; top: 0; right: 0; bottom: 0; width: 88px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: white; font-weight: 700; font-size: 12px; cursor: pointer; background: #dc2626; }
 .swipe-sil .ico { font-size: 20px; }
 .swipe-ic { position: relative; transform: translateX(0); transition: transform 0.2s ease; background: #0b1120; will-change: transform; }
+/* Sağa kaydır → PDF / WhatsApp */
+.swipe-actions { position: absolute; top: 0; left: 0; bottom: 0; width: 176px; display: flex; }
+.swipe-act { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: white; font-weight: 700; font-size: 11px; cursor: pointer; }
+.swipe-act .ico { font-size: 19px; }
+.swipe-act.pdf { background: #2563eb; }
+.swipe-act.wa { background: #16a34a; }
+/* Yazdırma / PDF alanı */
+#printArea { display: none; }
+@media print {
+    body > *:not(#printArea) { display: none !important; }
+    #printArea { display: block !important; color: #000; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+}
+#printArea h1 { font-size: 20px; margin-bottom: 4px; }
+#printArea .pdf-tarih { font-size: 12px; color: #444; margin-bottom: 14px; }
+#printArea table { width: 100%; border-collapse: collapse; font-size: 13px; }
+#printArea th { border-bottom: 2px solid #333; padding: 6px 4px; text-align: left; }
+#printArea td { border-bottom: 1px solid #ccc; padding: 6px 4px; }
+#printArea .pdf-toplam { margin-top: 16px; font-size: 16px; }
+#printArea .pdf-toplam5 { margin-top: 4px; font-size: 14px; color: #333; }
 
 .empty { text-align: center; padding: 40px 20px; color: #475569; }
 .empty .ico { font-size: 40px; margin-bottom: 10px; opacity: 0.5; }
@@ -140,6 +159,10 @@ body {
 .fis-baslik h2 { font-size: 20px; font-weight: 700; }
 .fis-baslik small { color: #64748b; font-size: 12px; }
 .btn-fissil { width: 100%; background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.2); color: #f87171; border-radius: 12px; padding: 12px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+.paylas-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.btn-pdf, .btn-wa { flex: 1; border: none; border-radius: 12px; padding: 13px; font-size: 14px; font-weight: 700; cursor: pointer; color: white; }
+.btn-pdf { background: linear-gradient(135deg,#3b82f6,#2563eb); }
+.btn-wa { background: linear-gradient(135deg,#22c55e,#16a34a); }
 
 /* Alt sekme çubuğu */
 .tabbar { position: fixed; bottom: 0; left: 0; right: 0; display: flex; background: rgba(11,17,32,0.96); backdrop-filter: blur(10px); border-top: 1px solid rgba(148,163,184,0.12); padding: 6px 0 calc(6px + env(safe-area-inset-bottom)); z-index: 50; }
@@ -250,6 +273,8 @@ body {
 <div class="foto-modal" id="fotoModal" onclick="this.classList.remove('acik')">
     <img id="fotoModalImg" src="">
 </div>
+
+<div id="printArea"></div>
 
 <script>
 var urunler = [];   // mevcut fiş (sepet)
@@ -584,7 +609,10 @@ function fislerRender() {
         var fy = fisYuan(fs.urunler);
         gY += fy; gU += yuanUsd(fy, fs.kurlar || {});
         gCesit += fs.urunler.length; gAdet += toplamAdet(fs.urunler);
-        html += '<div class="swipe-wrap"><div class="swipe-sil" onclick="fisSil(' + fs.id + ')"><span class="ico">🗑️</span>Sil</div><div class="swipe-ic"><div class="fis-card" onclick="fisAc(' + fs.id + ')">';
+        html += '<div class="swipe-wrap">' +
+            '<div class="swipe-actions"><div class="swipe-act pdf" onclick="fisPdf(' + fs.id + ')"><span class="ico">📄</span>PDF</div><div class="swipe-act wa" onclick="fisWhatsapp(' + fs.id + ')"><span class="ico">💬</span>WhatsApp</div></div>' +
+            '<div class="swipe-sil" onclick="fisSil(' + fs.id + ')"><span class="ico">🗑️</span>Sil</div>' +
+            '<div class="swipe-ic"><div class="fis-card" onclick="fisAc(' + fs.id + ')">';
         html += '<div class="fis-ust"><span class="fis-ad">🧾 ' + escapeHtml(fs.ad) + '</span><span class="fis-tarih">' + fs.tarih + '</span></div>';
         html += '<div class="fis-alt"><span class="adet">' + fs.urunler.length + ' çeşit · ' + toplamAdet(fs.urunler) + ' adet</span><span class="fis-toplam">' + yuanUsdStr(fy, fs.kurlar || {}) + '</span></div>';
         html += '</div></div></div>';
@@ -607,6 +635,7 @@ function fisAc(id) {
     html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + '</h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
     for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false, 'fisUrunSil(' + fs.id + ',' + j + ')');
     html += '<div class="toplam5">' + toplam5Rows(fs.urunler, k, '💰 Fiş Toplamı') + '</div>';
+    html += '<div class="paylas-row"><button class="btn-pdf" onclick="fisPdf(' + fs.id + ')">📄 PDF</button><button class="btn-wa" onclick="fisWhatsapp(' + fs.id + ')">💬 WhatsApp</button></div>';
     html += '<button class="btn-fisekle" onclick="fiseUrunEkleBasla(' + fs.id + ')">➕ Bu Fişe Ürün Ekle</button>';
     html += '<button class="btn-fissil" onclick="fisSil(' + fs.id + ')">🗑️ Bu Fişi Sil</button>';
     document.getElementById('fisDetay').innerHTML = html;
@@ -669,15 +698,67 @@ function fiseEklemeBitir() {
     if (id) fisAc(id);
 }
 
-/* ---------- Sola kaydır → Sil (dokunmatik) ---------- */
+/* ---------- Fiş paylaş (PDF / WhatsApp) ---------- */
+function fisBul(id) {
+    for (var i = 0; i < fisler.length; i++) if (fisler[i].id === id) return fisler[i];
+    return null;
+}
+// Fişi düz metne dök (WhatsApp / paylaşım için)
+function fisMetin(fs) {
+    var k = fs.kurlar || getKurlar();
+    var L = [];
+    L.push('🧾 ' + fs.ad + '  (' + fs.tarih + ')');
+    L.push('');
+    for (var i = 0; i < fs.urunler.length; i++) {
+        var u = fs.urunler[i], adet = u.adet || 0;
+        L.push((i+1) + '. ' + u.gram + 'g · ' + u.fiyat + '¥ × ' + adet + ' = ¥' + f((u.fiyat || 0) * adet));
+    }
+    var yuan = fisYuan(fs.urunler), y5 = yuan * 1.05;
+    L.push('');
+    L.push('📦 ' + fs.urunler.length + ' çeşit · ' + toplamAdet(fs.urunler) + ' adet');
+    L.push('Toplam: ¥' + f(yuan) + '  ($' + f(yuanUsd(yuan, k)) + ')');
+    L.push('+%5 dahil: ¥' + f(y5) + '  ($' + f(yuanUsd(y5, k)) + ')');
+    return L.join('\n');
+}
+function fisWhatsapp(id) {
+    var fs = fisBul(id); if (!fs) return;
+    var metin = fisMetin(fs);
+    if (navigator.share) {
+        navigator.share({ title: fs.ad, text: metin }).catch(function(){});
+    } else {
+        window.open('https://wa.me/?text=' + encodeURIComponent(metin), '_blank');
+    }
+}
+function fisPdf(id) {
+    var fs = fisBul(id); if (!fs) return;
+    var k = fs.kurlar || getKurlar();
+    var yuan = fisYuan(fs.urunler), y5 = yuan * 1.05;
+    var rows = '';
+    for (var i = 0; i < fs.urunler.length; i++) {
+        var u = fs.urunler[i], adet = u.adet || 0;
+        rows += '<tr><td>' + (i+1) + '</td><td>' + u.gram + 'g</td><td>' + u.fiyat + '¥</td><td>' + adet + '</td><td style="text-align:right">¥' + f((u.fiyat || 0) * adet) + '</td></tr>';
+    }
+    document.getElementById('printArea').innerHTML =
+        '<h1>🧾 ' + escapeHtml(fs.ad) + '</h1>' +
+        '<p class="pdf-tarih">' + fs.tarih + ' · ' + fs.urunler.length + ' çeşit · ' + toplamAdet(fs.urunler) + ' adet</p>' +
+        '<table><thead><tr><th>#</th><th>Gram</th><th>Fiyat</th><th>Adet</th><th style="text-align:right">Tutar</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<div class="pdf-toplam">Toplam: <b>¥' + f(yuan) + '</b> &nbsp; ($' + f(yuanUsd(yuan, k)) + ')</div>' +
+        '<div class="pdf-toplam5">+%5 dahil: <b>¥' + f(y5) + '</b> &nbsp; ($' + f(yuanUsd(y5, k)) + ')</div>';
+    window.print();
+}
+
+/* ---------- Kaydır → Sil / Paylaş (dokunmatik, iki yön) ---------- */
 function swipeKur() {
     document.querySelectorAll('.swipe-ic').forEach(function(el) {
         if (el._swipeInit) return;
         el._swipeInit = true;
+        var actions = el.parentNode.querySelector('.swipe-actions');
+        var sagMax = actions ? 176 : 0;   // sağa kaydırınca açılan panel (PDF/WhatsApp)
+        var solMax = 88;                   // sola kaydırınca açılan panel (Sil)
         var startX = 0, startY = 0, base = 0, lastTx = 0, dragging = false, moved = false, yatay = false;
         el.addEventListener('touchstart', function(e) {
             startX = e.touches[0].clientX; startY = e.touches[0].clientY;
-            base = el.classList.contains('acik') ? -88 : 0;
+            base = lastTx;
             dragging = true; moved = false; yatay = false;
             el.style.transition = 'none';
         }, { passive: true });
@@ -688,8 +769,8 @@ function swipeKur() {
             if (!yatay) return;
             moved = true;
             var tx = base + dx;
-            if (tx > 0) tx = 0;
-            if (tx < -110) tx = -110;
+            if (tx < -(solMax + 22)) tx = -(solMax + 22);
+            if (tx > sagMax) tx = sagMax;
             lastTx = tx;
             el.style.transform = 'translateX(' + tx + 'px)';
         }, { passive: true });
@@ -697,15 +778,18 @@ function swipeKur() {
             if (!dragging) return;
             dragging = false;
             el.style.transition = 'transform 0.2s ease';
-            if (lastTx < -44) { el.classList.add('acik'); el.style.transform = 'translateX(-88px)'; }
-            else { el.classList.remove('acik'); el.style.transform = 'translateX(0)'; lastTx = 0; }
+            if (lastTx < -solMax / 2) lastTx = -solMax;
+            else if (sagMax && lastTx > sagMax / 2) lastTx = sagMax;
+            else lastTx = 0;
+            el.style.transform = 'translateX(' + lastTx + 'px)';
+            el.classList.toggle('acik', lastTx !== 0);
         });
-        // Kaydırma yapıldıysa veya açıkken tıklamayı engelle (fiş açılmasın / kapansın)
+        // Açıkken/kaydırınca tıklamayı engelle (fiş açılmasın / önce kapansın)
         el.addEventListener('click', function(e) {
             if (moved) { e.stopPropagation(); e.preventDefault(); moved = false; return; }
-            if (el.classList.contains('acik')) {
+            if (lastTx !== 0) {
                 e.stopPropagation(); e.preventDefault();
-                el.classList.remove('acik'); el.style.transform = 'translateX(0)'; lastTx = 0;
+                lastTx = 0; el.style.transform = 'translateX(0)'; el.classList.remove('acik');
             }
         }, true);
     });
