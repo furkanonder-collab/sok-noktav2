@@ -110,15 +110,22 @@ body {
 /* Yazdırma / PDF alanı */
 #printArea { display: none; }
 @media print {
+    html, body { background: #fff !important; }
     body > *:not(#printArea) { display: none !important; }
-    #printArea { display: block !important; color: #000; padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    #printArea {
+        display: block !important; color: #000; background: #fff !important; padding: 16px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    #printArea * { color: #000 !important; }
 }
-#printArea h1 { font-size: 20px; margin-bottom: 4px; }
+#printArea h1 { font-size: 20px; margin-bottom: 4px; color: #000; }
 #printArea .pdf-tarih { font-size: 12px; color: #444; margin-bottom: 14px; }
-#printArea table { width: 100%; border-collapse: collapse; font-size: 13px; }
-#printArea th { border-bottom: 2px solid #333; padding: 6px 4px; text-align: left; }
-#printArea td { border-bottom: 1px solid #ccc; padding: 6px 4px; }
-#printArea .pdf-toplam { margin-top: 16px; font-size: 16px; }
+#printArea table { width: 100%; border-collapse: collapse; font-size: 13px; color: #000; }
+#printArea th { border-bottom: 2px solid #333; padding: 6px 4px; text-align: left; color: #000; }
+#printArea td { border-bottom: 1px solid #ccc; padding: 6px 4px; color: #000; }
+#printArea .pdf-foto { width: 46px; height: 46px; object-fit: cover; border-radius: 6px; border: 1px solid #ddd; }
+#printArea .pdf-toplam { margin-top: 16px; font-size: 16px; color: #000; }
 #printArea .pdf-toplam5 { margin-top: 4px; font-size: 14px; color: #333; }
 
 .empty { text-align: center; padding: 40px 20px; color: #475569; }
@@ -736,12 +743,13 @@ function fisPdf(id) {
     var rows = '';
     for (var i = 0; i < fs.urunler.length; i++) {
         var u = fs.urunler[i], adet = u.adet || 0;
-        rows += '<tr><td>' + (i+1) + '</td><td>' + u.gram + 'g</td><td>' + u.fiyat + '¥</td><td>' + adet + '</td><td style="text-align:right">¥' + f((u.fiyat || 0) * adet) + '</td></tr>';
+        var foto = u.img ? '<img class="pdf-foto" src="' + u.img + '">' : '';
+        rows += '<tr><td>' + (i+1) + '</td><td>' + foto + '</td><td>' + u.gram + 'g</td><td>' + u.fiyat + '¥</td><td>' + adet + '</td><td style="text-align:right">¥' + f((u.fiyat || 0) * adet) + '</td></tr>';
     }
     document.getElementById('printArea').innerHTML =
         '<h1>🧾 ' + escapeHtml(fs.ad) + '</h1>' +
         '<p class="pdf-tarih">' + fs.tarih + ' · ' + fs.urunler.length + ' çeşit · ' + toplamAdet(fs.urunler) + ' adet</p>' +
-        '<table><thead><tr><th>#</th><th>Gram</th><th>Fiyat</th><th>Adet</th><th style="text-align:right">Tutar</th></tr></thead><tbody>' + rows + '</tbody></table>' +
+        '<table><thead><tr><th>#</th><th>Foto</th><th>Gram</th><th>Fiyat</th><th>Adet</th><th style="text-align:right">Tutar</th></tr></thead><tbody>' + rows + '</tbody></table>' +
         '<div class="pdf-toplam">Toplam: <b>¥' + f(yuan) + '</b> &nbsp; ($' + f(yuanUsd(yuan, k)) + ')</div>' +
         '<div class="pdf-toplam5">+%5 dahil: <b>¥' + f(y5) + '</b> &nbsp; ($' + f(yuanUsd(y5, k)) + ')</div>';
     window.print();
