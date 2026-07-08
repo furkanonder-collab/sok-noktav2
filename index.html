@@ -183,6 +183,26 @@ body {
 .foto-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
 .foto-modal.acik { display: flex; }
 .foto-modal img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+.surum-not { text-align: center; color: #475569; font-size: 11px; margin-top: 14px; }
+.fk-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 120; padding: 20px; }
+.fk-modal.acik { display: flex; }
+.fk-box { background: #1e293b; border: 1px solid rgba(148,163,184,0.15); border-radius: 18px; padding: 20px; width: 100%; max-width: 380px; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.fk-title { font-size: 18px; font-weight: 700; color: #f1f5f9; margin-bottom: 16px; }
+.fk-label { display: block; color: #94a3b8; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+.fk-input { width: 100%; background: #0b1120; border: 1.5px solid #334155; border-radius: 11px; color: #f1f5f9; font-size: 16px; padding: 12px; margin-bottom: 16px; outline: none; }
+.fk-input:focus { border-color: #6366f1; }
+.fk-foto-btn { width: 100%; background: rgba(99,102,241,0.15); border: 1.5px dashed #4f46e5; color: #a5b4fc; border-radius: 11px; padding: 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.fk-foto-onizleme { position: relative; display: inline-block; }
+.fk-foto-onizleme img { max-width: 100%; max-height: 180px; border-radius: 11px; display: block; cursor: pointer; }
+.fk-foto-sil { position: absolute; top: 6px; right: 6px; background: rgba(220,38,38,0.9); border: none; color: white; font-size: 11px; font-weight: 700; padding: 5px 9px; border-radius: 999px; cursor: pointer; }
+.fk-actions { display: flex; gap: 10px; margin-top: 18px; }
+.fk-btn { flex: 1; border: none; border-radius: 11px; padding: 13px; font-size: 15px; font-weight: 700; cursor: pointer; }
+.fk-btn.iptal { background: rgba(148,163,184,0.15); color: #cbd5e1; }
+.fk-btn.kaydet { background: linear-gradient(135deg,#10b981,#059669); color: white; }
+.fis-kart { position: relative; margin-bottom: 14px; }
+.fis-kart img { width: 100%; max-height: 200px; object-fit: contain; background: #0b1120; border-radius: 12px; cursor: pointer; }
+.fis-kart-degistir { margin-top: 6px; background: rgba(99,102,241,0.18); border: none; color: #a5b4fc; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+.fis-kart-ekle { width: 100%; background: rgba(99,102,241,0.12); border: 1.5px dashed #4f46e5; color: #a5b4fc; border-radius: 12px; padding: 12px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 14px; }
 </style>
 </head>
 <body>
@@ -220,6 +240,7 @@ body {
             <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
             <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
+        <div class="surum-not">Sürüm 4 · IndexedDB depolama</div>
     </div>
 
     <div class="card">
@@ -275,11 +296,25 @@ body {
     <button id="tab-siparisler" onclick="tabGoster('siparisler')"><span class="ico">📋</span><span id="tabSiparisEt">Siparişler</span></button>
 </nav>
 
-<input type="file" accept="image/*" id="fotoInput" style="display:none" onchange="fotoYuklendi(this)">
+<input type="file" accept="image/*" capture="environment" id="fotoInput" style="display:none" onchange="fotoYuklendi(this)">
 <input type="file" accept=".json,application/json" id="yedekInput" style="display:none" onchange="geriYukle(this)">
 
 <div class="foto-modal" id="fotoModal" onclick="this.classList.remove('acik')">
     <img id="fotoModalImg" src="">
+</div>
+
+<div class="fk-modal" id="fisKaydetModal">
+    <div class="fk-box">
+        <div class="fk-title">🧾 Fişi Kaydet</div>
+        <label class="fk-label">Fiş adı (tedarikçi / dükkan) — zorunlu</label>
+        <input type="text" id="fkAd" class="fk-input" placeholder="Örn. Zirve Tekstil" autocomplete="off">
+        <label class="fk-label">Firma kartı resmi (isteğe bağlı)</label>
+        <div id="fkFotoWrap"></div>
+        <div class="fk-actions">
+            <button type="button" class="fk-btn iptal" onclick="fisKaydetIptal()">İptal</button>
+            <button type="button" class="fk-btn kaydet" onclick="fisKaydetOnay()">Kaydet</button>
+        </div>
+    </div>
 </div>
 
 <div id="printArea"></div>
@@ -289,6 +324,8 @@ var urunler = [];   // mevcut fiş (sepet)
 var fisler = [];    // kayıtlı fişler
 var _girisFoto = null;  // önizlemedeki ürünün fotoğrafı
 var aktifFisId = null;  // kayıtlı bir fişe ürün ekleme modu (null = normal sepet)
+var _fisKartFoto = null; // fiş kaydetme modalındaki firma kartı resmi
+var _kartFisId = null;   // kayıtlı fişe kart resmi eklerken hedef fiş id
 
 /* ---------- localStorage ---------- */
 var _kurFields = ['rnb','usd','zNak','nNak','sNak'];
@@ -414,18 +451,18 @@ function geriYukle(input) {
 }
 
 /* ---------- Fotoğraf ---------- */
-function resizeImage(file, cb) {
+function resizeImage(file, cb, maxSize, q) {
     var reader = new FileReader();
     reader.onload = function(ev) {
         var img = new Image();
         img.onload = function() {
-            var max = 400, w = img.width, h = img.height;
+            var max = maxSize || 400, w = img.width, h = img.height;
             if (w > h) { if (w > max) { h = Math.round(h * max / w); w = max; } }
             else { if (h > max) { w = Math.round(w * max / h); h = max; } }
             var cv = document.createElement('canvas');
             cv.width = w; cv.height = h;
             cv.getContext('2d').drawImage(img, 0, 0, w, h);
-            try { cb(cv.toDataURL('image/jpeg', 0.7)); } catch(e) { cb(ev.target.result); }
+            try { cb(cv.toDataURL('image/jpeg', q || 0.7)); } catch(e) { cb(ev.target.result); }
         };
         img.src = ev.target.result;
     };
@@ -442,6 +479,15 @@ function fotoTiklandi(i) {
 }
 function fotoYuklendi(input) {
     if (!input.files || !input.files[0]) return;
+    var hedef = _fotoHedef;
+    // Firma kartı resmi (-3 = fiş kaydetme modalı, -4 = kayıtlı fiş) → daha yüksek çözünürlük (kart yazıları okunsun)
+    if (hedef === -3 || hedef === -4) {
+        resizeImage(input.files[0], function(dataUrl) {
+            if (hedef === -3) { _fisKartFoto = dataUrl; fkFotoGuncelle(); }
+            else { var fs = fisBul(_kartFisId); if (fs) { fs.kartFoto = dataUrl; fislerKaydet(); fisAc(_kartFisId); } }
+        }, 1000, 0.85);
+        return;
+    }
     resizeImage(input.files[0], function(dataUrl) {
         if (_fotoHedef === -2) { _girisFoto = dataUrl; girisFotoGuncelle(); }
         else if (_fotoHedef >= 0 && _fotoHedef < urunler.length) { urunler[_fotoHedef].img = dataUrl; urunlerKaydet(); renderFis(); }
@@ -542,6 +588,7 @@ function siparisVer() {
     _girisFoto = null;
     girisFotoGuncelle();
     document.getElementById('onizleme').style.display = 'none';
+    window.scrollTo(0, 0);
     document.getElementById('gramInput').focus();
     tabRozetGuncelle();
 }
@@ -618,14 +665,29 @@ function renderFis() {
 /* ---------- Fiş kaydet ---------- */
 function fisKaydet() {
     if (urunler.length === 0) { alert('Fişte ürün yok.'); return; }
-    var ad = prompt('Fiş adı (tedarikçi / dükkan) — zorunlu:', '');
-    if (ad === null) return;
-    ad = (ad || '').trim();
-    while (!ad) {
-        ad = prompt('⚠️ Fiş adı zorunlu. Tedarikçi / dükkan adını gir:', '');
-        if (ad === null) return;
-        ad = (ad || '').trim();
-    }
+    _fisKartFoto = null;
+    document.getElementById('fkAd').value = '';
+    fkFotoGuncelle();
+    document.getElementById('fisKaydetModal').classList.add('acik');
+    setTimeout(function() { document.getElementById('fkAd').focus(); }, 80);
+}
+function fisKaydetIptal() {
+    document.getElementById('fisKaydetModal').classList.remove('acik');
+    _fisKartFoto = null;
+}
+function fisKartFotoSec() {
+    _fotoHedef = -3;
+    var inp = document.getElementById('fotoInput'); inp.value = ''; inp.click();
+}
+function fisKartFotoSil() { _fisKartFoto = null; fkFotoGuncelle(); }
+function fkFotoGuncelle() {
+    var w = document.getElementById('fkFotoWrap');
+    if (_fisKartFoto) w.innerHTML = '<div class="fk-foto-onizleme"><img src="' + _fisKartFoto + '" onclick="fotoBuyutEl(this)"><button type="button" class="fk-foto-sil" onclick="fisKartFotoSil()">✕ Kaldır</button></div>';
+    else w.innerHTML = '<button type="button" class="fk-foto-btn" onclick="fisKartFotoSec()">📷 Kart Resmi Çek</button>';
+}
+function fisKaydetOnay() {
+    var ad = (document.getElementById('fkAd').value || '').trim();
+    if (!ad) { alert('⚠️ Fiş adı zorunlu. Tedarikçi / dükkan adını gir.'); return; }
     var k = getKurlar();
     fisler.push({
         id: Date.now(),
@@ -633,13 +695,16 @@ function fisKaydet() {
         tarih: new Date().toLocaleDateString('tr-TR'),
         kurlar: k,
         urunler: urunler,
-        toplam: fisYuan(urunler)
+        toplam: fisYuan(urunler),
+        kartFoto: _fisKartFoto
     });
     fislerKaydet();
     urunler = [];
     urunlerKaydet();
     renderFis();
     tabRozetGuncelle();
+    _fisKartFoto = null;
+    document.getElementById('fisKaydetModal').classList.remove('acik');
     alert('✅ Fiş kaydedildi: ' + ad + '\n\nYeni fişe başlayabilirsin.');
     tabGoster('siparisler');
 }
@@ -682,6 +747,8 @@ function fisAc(id) {
     var html = '';
     html += '<button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
     html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + ' <button class="btn-adduzenle" onclick="fisAdDuzenle(' + fs.id + ')">✏️</button></h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
+    if (fs.kartFoto) html += '<div class="fis-kart"><img src="' + fs.kartFoto + '" onclick="fotoBuyutEl(this)"><button class="fis-kart-degistir" onclick="fisKartDegistir(' + fs.id + ')">✏️ Kartı değiştir</button></div>';
+    else html += '<button class="fis-kart-ekle" onclick="fisKartDegistir(' + fs.id + ')">📇 Firma Kartı Resmi Ekle</button>';
     for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false, 'fisUrunSil(' + fs.id + ',' + j + ')');
     html += '<div class="toplam5">' + toplam5Rows(fs.urunler, k, '💰 Fiş Toplamı') + '</div>';
     html += '<div class="paylas-row"><button class="btn-pdf" onclick="fisPdf(' + fs.id + ')">📄 PDF</button><button class="btn-wa" onclick="fisWhatsapp(' + fs.id + ')">💬 WhatsApp</button></div>';
@@ -716,6 +783,12 @@ function fisAdDuzenle(id) {
     fs.ad = yeni;
     fislerKaydet();
     fisAc(id);
+}
+// Kayıtlı fişin firma kartı resmini ekle / değiştir
+function fisKartDegistir(id) {
+    _fotoHedef = -4;
+    _kartFisId = id;
+    var inp = document.getElementById('fotoInput'); inp.value = ''; inp.click();
 }
 // Kayıtlı fişin içinden ürün sil (onaylı)
 function fisUrunSil(fisId, urunIdx) {
