@@ -310,24 +310,61 @@ function kurYukle() {
         }
     } catch(e) {}
 }
-function urunlerKaydet() {
-    try { localStorage.setItem('smh_urunler', JSON.stringify(urunler)); }
-    catch(e) { alert('Depolama alanı dolmuş olabilir. Bazı ürünleri veya fotoğrafları silin.'); }
+/* ---------- IndexedDB (büyük depolama) ---------- */
+var _db = null;
+function dbAc() {
+    return new Promise(function(resolve, reject) {
+        if (_db) { resolve(_db); return; }
+        var req = indexedDB.open('sok_nokta_db', 1);
+        req.onupgradeneeded = function(e) {
+            var db = e.target.result;
+            if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
+        };
+        req.onsuccess = function(e) { _db = e.target.result; resolve(_db); };
+        req.onerror = function() { reject(req.error); };
+    });
 }
-function urunlerYukle() {
-    try { var a = JSON.parse(localStorage.getItem('smh_urunler')); if (Array.isArray(a)) urunler = a; } catch(e) {}
+function dbGet(key) {
+    return dbAc().then(function(db) { return new Promise(function(resolve, reject) {
+        var r = db.transaction('kv', 'readonly').objectStore('kv').get(key);
+        r.onsuccess = function() { resolve(r.result); };
+        r.onerror = function() { reject(r.error); };
+    }); });
+}
+function dbSet(key, val) {
+    return dbAc().then(function(db) { return new Promise(function(resolve, reject) {
+        var tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(val, key);
+        tx.oncomplete = function() { resolve(); };
+        tx.onerror = function() { reject(tx.error); };
+    }); });
+}
+function urunlerKaydet() {
+    dbSet('urunler', urunler).catch(function() { alert('Kaydetme sırasında bir sorun oldu. Yedek almanız önerilir.'); });
 }
 function fislerKaydet() {
-    try { localStorage.setItem('smh_fisler', JSON.stringify(fisler)); }
-    catch(e) { alert('Depolama alanı dolmuş olabilir. Eski fişleri veya fotoğrafları silin.'); }
+    dbSet('fisler', fisler).catch(function() { alert('Kaydetme sırasında bir sorun oldu. Yedek almanız önerilir.'); });
 }
-function fislerYukle() {
-    try { var a = JSON.parse(localStorage.getItem('smh_fisler')); if (Array.isArray(a)) fisler = a; } catch(e) {}
+// Başlangıçta veriyi yükle; IndexedDB boşsa eski localStorage verisini (silmeden) taşı
+function verileriYukle() {
+    return Promise.all([dbGet('urunler'), dbGet('fisler')]).then(function(res) {
+        var u = res[0], f = res[1];
+        if (u === undefined && f === undefined) {
+            // Yeni sürümün ilk açılışı → localStorage'daki veriyi IndexedDB'ye taşı (localStorage silinmez, yedek kalır)
+            try { var lu = JSON.parse(localStorage.getItem('smh_urunler')); if (Array.isArray(lu)) urunler = lu; } catch(e) {}
+            try { var lf = JSON.parse(localStorage.getItem('smh_fisler')); if (Array.isArray(lf)) fisler = lf; } catch(e) {}
+            return Promise.all([dbSet('urunler', urunler), dbSet('fisler', fisler)]);
+        }
+        if (Array.isArray(u)) urunler = u;
+        if (Array.isArray(f)) fisler = f;
+    }).catch(function() {
+        // IndexedDB açılamazsa localStorage'a geri düş (veri kaybı olmasın)
+        try { var lu = JSON.parse(localStorage.getItem('smh_urunler')); if (Array.isArray(lu)) urunler = lu; } catch(e) {}
+        try { var lf = JSON.parse(localStorage.getItem('smh_fisler')); if (Array.isArray(lf)) fisler = lf; } catch(e) {}
+    });
 }
 
 kurYukle();
-urunlerYukle();
-fislerYukle();
 
 function toggleKur() {
     var c = document.getElementById('kurCard');
@@ -837,8 +874,11 @@ function tabRozetGuncelle() {
     document.getElementById('tabSiparisEt').innerHTML = 'Siparişler' + (fisler.length ? '<span class="tab-rozet">' + fisler.length + '</span>' : '');
 }
 
-renderFis();
-tabRozetGuncelle();
+// Veri IndexedDB'den (ilk açılışta localStorage'dan taşınarak) yüklenince ekranı çiz
+verileriYukle().then(function() {
+    renderFis();
+    tabRozetGuncelle();
+});
 
 document.getElementById('gramInput').addEventListener('input', onGirisDegis);
 document.getElementById('fiyatInput').addEventListener('input', onGirisDegis);
