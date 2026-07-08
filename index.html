@@ -164,6 +164,7 @@ body {
 .btn-geri { background: rgba(148,163,184,0.1); border: none; color: #94a3b8; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 999px; cursor: pointer; margin-bottom: 12px; }
 .fis-baslik { margin-bottom: 14px; }
 .fis-baslik h2 { font-size: 20px; font-weight: 700; }
+.btn-adduzenle { background: rgba(99,102,241,0.18); border: none; color: #a5b4fc; font-size: 14px; cursor: pointer; padding: 4px 9px; border-radius: 8px; vertical-align: middle; margin-left: 4px; }
 .fis-baslik small { color: #64748b; font-size: 12px; }
 .btn-fissil { width: 100%; background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.2); color: #f87171; border-radius: 12px; padding: 12px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-top: 4px; }
 .paylas-row { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -580,10 +581,14 @@ function renderFis() {
 /* ---------- Fiş kaydet ---------- */
 function fisKaydet() {
     if (urunler.length === 0) { alert('Fişte ürün yok.'); return; }
-    var ad = prompt('Fiş adı (tedarikçi / dükkan):', '');
+    var ad = prompt('Fiş adı (tedarikçi / dükkan) — zorunlu:', '');
     if (ad === null) return;
     ad = (ad || '').trim();
-    if (!ad) ad = 'Sipariş ' + (fisler.length + 1);
+    while (!ad) {
+        ad = prompt('⚠️ Fiş adı zorunlu. Tedarikçi / dükkan adını gir:', '');
+        if (ad === null) return;
+        ad = (ad || '').trim();
+    }
     var k = getKurlar();
     fisler.push({
         id: Date.now(),
@@ -639,7 +644,7 @@ function fisAc(id) {
     var k = fs.kurlar || getKurlar();
     var html = '';
     html += '<button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
-    html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + '</h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
+    html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + ' <button class="btn-adduzenle" onclick="fisAdDuzenle(' + fs.id + ')">✏️</button></h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
     for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false, 'fisUrunSil(' + fs.id + ',' + j + ')');
     html += '<div class="toplam5">' + toplam5Rows(fs.urunler, k, '💰 Fiş Toplamı') + '</div>';
     html += '<div class="paylas-row"><button class="btn-pdf" onclick="fisPdf(' + fs.id + ')">📄 PDF</button><button class="btn-wa" onclick="fisWhatsapp(' + fs.id + ')">💬 WhatsApp</button></div>';
@@ -662,6 +667,18 @@ function fisSil(id) {
     fislerKaydet();
     tabRozetGuncelle();
     fisGeri();
+}
+// Kayıtlı fişin adını düzenle
+function fisAdDuzenle(id) {
+    var fs = fisBul(id);
+    if (!fs) return;
+    var yeni = prompt('Fiş adı (tedarikçi / dükkan):', fs.ad);
+    if (yeni === null) return;
+    yeni = (yeni || '').trim();
+    if (!yeni) { alert('İsim boş olamaz.'); return; }
+    fs.ad = yeni;
+    fislerKaydet();
+    fisAc(id);
 }
 // Kayıtlı fişin içinden ürün sil (onaylı)
 function fisUrunSil(fisId, urunIdx) {
