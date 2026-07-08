@@ -167,6 +167,8 @@ body {
 .fis-baslik { margin-bottom: 14px; }
 .fis-baslik h2 { font-size: 20px; font-weight: 700; }
 .btn-adduzenle { background: rgba(99,102,241,0.18); border: none; color: #a5b4fc; font-size: 14px; cursor: pointer; padding: 4px 9px; border-radius: 8px; vertical-align: middle; margin-left: 4px; }
+.fis-sure { font-size: 15px; color: #cbd5e1; font-weight: 600; margin-bottom: 14px; }
+.fis-sure b { color: #fbbf24; }
 .fis-baslik small { color: #64748b; font-size: 12px; }
 .btn-fissil { width: 100%; background: rgba(153,27,27,0.15); border: 1px solid rgba(239,68,68,0.2); color: #f87171; border-radius: 12px; padding: 12px; font-size: 13.5px; font-weight: 600; cursor: pointer; margin-top: 4px; }
 .paylas-row { display: flex; gap: 8px; margin-bottom: 8px; }
@@ -242,7 +244,7 @@ body {
             <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
             <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
-        <div class="surum-not">Sürüm 9 · IndexedDB depolama</div>
+        <div class="surum-not">Sürüm 10 · IndexedDB depolama</div>
     </div>
 
     <div class="card">
@@ -310,6 +312,8 @@ body {
         <div class="fk-title">🧾 Fişi Kaydet</div>
         <label class="fk-label">Fiş adı (tedarikçi / dükkan) — isteğe bağlı</label>
         <input type="text" id="fkAd" class="fk-input" placeholder="Örn. Güçlü" autocomplete="off">
+        <label class="fk-label">Tedarik süresi (gün) — zorunlu</label>
+        <input type="number" id="fkSure" class="fk-input" placeholder="Örn. 15" inputmode="numeric" min="1">
         <label class="fk-label">Firma kartı resmi — zorunlu</label>
         <div id="fkFotoWrap"></div>
         <div class="fk-actions">
@@ -682,6 +686,7 @@ function fisKaydet() {
     if (urunler.length === 0) { alert('Fişte ürün yok.'); return; }
     _fisKartFoto = null;
     document.getElementById('fkAd').value = '';
+    document.getElementById('fkSure').value = '';
     fkFotoGuncelle();
     document.getElementById('fisKaydetModal').classList.add('acik');
     setTimeout(function() { document.getElementById('fkAd').focus(); }, 80);
@@ -702,6 +707,8 @@ function fkFotoGuncelle() {
 }
 function fisKaydetOnay() {
     if (!_fisKartFoto) { alert('⚠️ Firma kartı resmi zorunlu. Lütfen kartın fotoğrafını çek.'); return; }
+    var sure = parseInt(document.getElementById('fkSure').value);
+    if (!sure || sure < 1) { alert('⚠️ Tedarik süresi (gün) zorunlu. Kaç günde geleceğini gir.'); return; }
     var ad = (document.getElementById('fkAd').value || '').trim();
     if (!ad) ad = 'Sipariş ' + (fisler.length + 1);
     var k = getKurlar();
@@ -709,6 +716,7 @@ function fisKaydetOnay() {
         id: Date.now(),
         ad: ad,
         tarih: new Date().toLocaleDateString('tr-TR'),
+        sure: sure,
         kurlar: k,
         urunler: urunler,
         toplam: fisYuan(urunler),
@@ -743,7 +751,7 @@ function fislerRender() {
             '<div class="swipe-actions"><div class="swipe-act pdf" onclick="fisPdf(' + fs.id + ')"><span class="ico">📄</span>PDF</div><div class="swipe-act wa" onclick="fisWhatsapp(' + fs.id + ')"><span class="ico">💬</span>WhatsApp</div></div>' +
             '<div class="swipe-sil" onclick="fisSil(' + fs.id + ')"><span class="ico">🗑️</span>Sil</div>' +
             '<div class="swipe-ic"><div class="fis-card" onclick="fisAc(' + fs.id + ')">';
-        html += '<div class="fis-ust"><span class="fis-ad">🧾 ' + escapeHtml(fs.ad) + '</span><span class="fis-tarih">' + fs.tarih + '</span></div>';
+        html += '<div class="fis-ust"><span class="fis-ad">🧾 ' + escapeHtml(fs.ad) + '</span><span class="fis-tarih">' + fs.tarih + (fs.sure ? ' · ⏳' + fs.sure + 'g' : '') + '</span></div>';
         html += '<div class="fis-alt"><span class="adet">' + fs.urunler.length + ' çeşit · ' + toplamAdet(fs.urunler) + ' adet · ' + kgStr(toplamKg(fs.urunler)) + ' kg</span><span class="fis-toplam">' + yuanUsdStr(fy, fs.kurlar || {}) + '</span></div>';
         html += '</div></div></div>';
     }
@@ -764,6 +772,7 @@ function fisAc(id) {
     var html = '';
     html += '<button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
     html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + ' <button class="btn-adduzenle" onclick="fisAdDuzenle(' + fs.id + ')">✏️</button></h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
+    html += '<div class="fis-sure">⏳ Tedarik süresi: <b>' + (fs.sure ? fs.sure + ' gün' : 'girilmemiş') + '</b> <button class="btn-adduzenle" onclick="fisSureDuzenle(' + fs.id + ')">✏️</button></div>';
     if (fs.kartFoto) html += '<div class="fis-kart"><img src="' + fs.kartFoto + '" onclick="fotoBuyutEl(this)"><button class="fis-kart-degistir" onclick="fisKartDegistir(' + fs.id + ')">✏️ Kartı değiştir</button></div>';
     else html += '<button class="fis-kart-ekle" onclick="fisKartDegistir(' + fs.id + ')">📇 Firma Kartı Resmi Ekle</button>';
     for (var j = 0; j < fs.urunler.length; j++) html += urunKartHtml(fs.urunler[j], j, k, false, 'fisUrunSil(' + fs.id + ',' + j + ')');
@@ -806,6 +815,18 @@ function fisKartDegistir(id) {
     _fotoHedef = -4;
     _kartFisId = id;
     var inp = document.getElementById('fotoInput'); inp.value = ''; inp.click();
+}
+// Kayıtlı fişin tedarik süresini (gün) ekle / değiştir — süresiz eski fişler için de
+function fisSureDuzenle(id) {
+    var fs = fisBul(id);
+    if (!fs) return;
+    var val = prompt('Tedarik süresi (gün):', fs.sure || '');
+    if (val === null) return;
+    var s = parseInt(val);
+    if (!s || s < 1) { alert('Geçerli bir gün sayısı gir.'); return; }
+    fs.sure = s;
+    fislerKaydet();
+    fisAc(id);
 }
 // Kayıtlı fişin içinden ürün sil (onaylı)
 function fisUrunSil(fisId, urunIdx) {
