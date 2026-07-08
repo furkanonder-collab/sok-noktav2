@@ -1,5 +1,5 @@
 // Şok Nokta - çevrimdışı önbellek (service worker)
-var CACHE = 'sok-nokta-v3';
+var CACHE = 'sok-nokta-v4';
 var ASSETS = ['./', './index.html'];
 
 self.addEventListener('install', function(e) {
