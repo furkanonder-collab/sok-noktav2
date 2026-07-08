@@ -144,8 +144,8 @@ body {
 .toplam5 .v2 { font-size: 18px; font-weight: 800; color: #fcd34d; }
 .toplam5 .usd { font-weight: 700; margin-left: 5px; }
 .t5-info { font-size: 12px; color: #94a3b8; font-weight: 600; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed rgba(148,163,184,0.18); }
-.t5-nak { font-size: 13px; color: #cbd5e1; font-weight: 600; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(148,163,184,0.18); }
-.t5-nak b { color: #6ee7b7; }
+.t5-nak { font-size: 15px; color: #cbd5e1; font-weight: 600; margin-top: 10px; padding-top: 10px; border-top: 1px dashed rgba(148,163,184,0.18); line-height: 1.7; }
+.t5-nak b { color: #6ee7b7; font-size: 17px; }
 
 .btn-fis { width: 100%; background: linear-gradient(135deg,#3b82f6,#6366f1); border: none; color: white; border-radius: 12px; padding: 15px; font-size: 15px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(59,130,246,0.35); transition: transform 0.1s; margin-bottom: 8px; }
 .btn-fis:active { transform: scale(0.98); }
@@ -242,7 +242,7 @@ body {
             <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
             <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
-        <div class="surum-not">Sürüm 8 · IndexedDB depolama</div>
+        <div class="surum-not">Sürüm 9 · IndexedDB depolama</div>
     </div>
 
     <div class="card">
@@ -540,8 +540,8 @@ function toplamKg(liste) {
 function kgStr(kg) { return kg.toLocaleString('tr-TR', { maximumFractionDigits: 2 }); }
 // Nakliye tutarı: toplam kg × kg fiyatı ($). Zirve = zNak, Neyma = nNak (kullanıcıya göre değerler $/kg).
 function nakliyeSatiri(kg, k) {
-    var z = kg * (k.zNak || 0), n = kg * (k.nNak || 0);
-    return '<div class="t5-nak">🚚 Zirve: <b>$' + f(z) + '</b> · Neyma: <b>$' + f(n) + '</b></div>';
+    var z = kg * (k.zNak || 0), n = kg * (k.nNak || 0), s = kg * (k.sNak || 0);
+    return '<div class="t5-nak">🚚 Zirve: <b>$' + f(z) + '</b> · Neyma: <b>$' + f(n) + '</b> · Serkan: <b>$' + f(s) + '</b></div>';
 }
 // Yuan → USD ($ = ¥ × RMB kuru ÷ USD kuru)
 function yuanUsd(yuan, k) { return yuan * (k.rnb || 0) / (k.usd || 1); }
