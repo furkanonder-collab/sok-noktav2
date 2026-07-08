@@ -240,7 +240,7 @@ body {
             <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
             <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
-        <div class="surum-not">Sürüm 4 · IndexedDB depolama</div>
+        <div class="surum-not">Sürüm 5 · IndexedDB depolama</div>
     </div>
 
     <div class="card">
@@ -306,9 +306,9 @@ body {
 <div class="fk-modal" id="fisKaydetModal">
     <div class="fk-box">
         <div class="fk-title">🧾 Fişi Kaydet</div>
-        <label class="fk-label">Fiş adı (tedarikçi / dükkan) — zorunlu</label>
+        <label class="fk-label">Fiş adı (tedarikçi / dükkan) — isteğe bağlı</label>
         <input type="text" id="fkAd" class="fk-input" placeholder="Örn. Zirve Tekstil" autocomplete="off">
-        <label class="fk-label">Firma kartı resmi (isteğe bağlı)</label>
+        <label class="fk-label">Firma kartı resmi — zorunlu</label>
         <div id="fkFotoWrap"></div>
         <div class="fk-actions">
             <button type="button" class="fk-btn iptal" onclick="fisKaydetIptal()">İptal</button>
@@ -686,8 +686,9 @@ function fkFotoGuncelle() {
     else w.innerHTML = '<button type="button" class="fk-foto-btn" onclick="fisKartFotoSec()">📷 Kart Resmi Çek</button>';
 }
 function fisKaydetOnay() {
+    if (!_fisKartFoto) { alert('⚠️ Firma kartı resmi zorunlu. Lütfen kartın fotoğrafını çek.'); return; }
     var ad = (document.getElementById('fkAd').value || '').trim();
-    if (!ad) { alert('⚠️ Fiş adı zorunlu. Tedarikçi / dükkan adını gir.'); return; }
+    if (!ad) ad = 'Sipariş ' + (fisler.length + 1);
     var k = getKurlar();
     fisler.push({
         id: Date.now(),
