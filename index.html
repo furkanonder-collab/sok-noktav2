@@ -187,6 +187,10 @@ body {
 .foto-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
 .foto-modal.acik { display: flex; }
 .foto-modal img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+.foto-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 48px; height: 64px; border: none; background: rgba(255,255,255,0.14); color: #fff; font-size: 34px; line-height: 1; border-radius: 12px; cursor: pointer; display: none; align-items: center; justify-content: center; z-index: 101; }
+.foto-nav.sol { left: 10px; }
+.foto-nav.sag { right: 10px; }
+.foto-sayac { position: fixed; bottom: 24px; left: 0; right: 0; text-align: center; color: #fff; font-size: 15px; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.6); z-index: 101; }
 .surum-not { text-align: center; color: #475569; font-size: 11px; margin-top: 14px; }
 .fk-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: none; align-items: center; justify-content: center; z-index: 120; padding: 20px; }
 .fk-modal.acik { display: flex; }
@@ -244,7 +248,7 @@ body {
             <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
             <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
-        <div class="surum-not">Sürüm 10 · IndexedDB depolama</div>
+        <div class="surum-not">Sürüm 11 · IndexedDB depolama</div>
     </div>
 
     <div class="card">
@@ -303,8 +307,11 @@ body {
 <input type="file" accept="image/*" capture="environment" id="fotoInput" style="display:none" onchange="fotoYuklendi(this)">
 <input type="file" accept=".json,application/json" id="yedekInput" style="display:none" onchange="geriYukle(this)">
 
-<div class="foto-modal" id="fotoModal" onclick="this.classList.remove('acik')">
+<div class="foto-modal" id="fotoModal" onclick="if(event.target===this)this.classList.remove('acik')">
+    <button class="foto-nav sol" id="fotoNavSol" onclick="event.stopPropagation();galeriKaydir(-1)">‹</button>
     <img id="fotoModalImg" src="">
+    <button class="foto-nav sag" id="fotoNavSag" onclick="event.stopPropagation();galeriKaydir(1)">›</button>
+    <div class="foto-sayac" id="fotoSayac"></div>
 </div>
 
 <div class="fk-modal" id="fisKaydetModal">
@@ -332,6 +339,8 @@ var _girisFoto = null;  // önizlemedeki ürünün fotoğrafı
 var aktifFisId = null;  // kayıtlı bir fişe ürün ekleme modu (null = normal sepet)
 var _fisKartFoto = null; // fiş kaydetme modalındaki firma kartı resmi
 var _kartFisId = null;   // kayıtlı fişe kart resmi eklerken hedef fiş id
+var _siparisScroll = 0;  // Siparişler listesindeki kaydırma konumu (fişten çıkınca geri dön)
+var _galeri = [], _galeriIndex = 0; // fiş içi ürün resmi galerisi
 
 /* ---------- localStorage ---------- */
 var _kurFields = ['rnb','usd','zNak','nNak','sNak'];
@@ -505,8 +514,30 @@ function girisFotoGuncelle() {
     else w.innerHTML = '<button class="foto-ekle" onclick="fotoGirisSec()">📷</button>';
 }
 function fotoBuyutEl(el) {
-    document.getElementById('fotoModalImg').src = el.src;
+    if (el.classList.contains('urun-foto')) {
+        // Aynı fişteki tüm ürün resimlerini galeri olarak topla
+        var c = el.closest('#fisDetay') || el.closest('#fisUrunList') || document;
+        var imgs = [].slice.call(c.querySelectorAll('.urun-foto'));
+        _galeri = imgs.map(function(x) { return x.src; });
+        _galeriIndex = imgs.indexOf(el); if (_galeriIndex < 0) _galeriIndex = 0;
+    } else {
+        _galeri = [el.src]; _galeriIndex = 0;
+    }
+    galeriGoster();
+}
+function galeriGoster() {
+    if (!_galeri.length) return;
+    document.getElementById('fotoModalImg').src = _galeri[_galeriIndex];
+    var cok = _galeri.length > 1;
+    document.getElementById('fotoSayac').textContent = cok ? (_galeriIndex + 1) + ' / ' + _galeri.length : '';
+    document.getElementById('fotoNavSol').style.display = cok ? 'flex' : 'none';
+    document.getElementById('fotoNavSag').style.display = cok ? 'flex' : 'none';
     document.getElementById('fotoModal').classList.add('acik');
+}
+function galeriKaydir(yon) {
+    if (_galeri.length < 2) return;
+    _galeriIndex = (_galeriIndex + yon + _galeri.length) % _galeri.length;
+    galeriGoster();
 }
 
 /* ---------- Hesaplama ---------- */
@@ -768,6 +799,7 @@ function fisAc(id) {
     var fs = null;
     for (var i = 0; i < fisler.length; i++) if (fisler[i].id === id) fs = fisler[i];
     if (!fs) return;
+    if (document.getElementById('fislerList').style.display !== 'none') _siparisScroll = window.scrollY || window.pageYOffset || 0;
     var k = fs.kurlar || getKurlar();
     var html = '';
     html += '<button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
@@ -790,6 +822,7 @@ function fisGeri() {
     document.getElementById('fisDetay').style.display = 'none';
     document.getElementById('fislerList').style.display = 'block';
     fislerRender();
+    window.scrollTo(0, _siparisScroll);
 }
 function fisSil(id) {
     if (!confirm('Bu fiş tamamen silinsin mi?')) return;
@@ -1003,6 +1036,19 @@ document.getElementById('fiyatInput').addEventListener('keydown', function(e) {
 document.getElementById('onAdet').addEventListener('keydown', function(e) {
     if (e.key === 'Enter') siparisVer();
 });
+
+// Foto galeri — dokunmatik kaydırma (fiş içi ürün resimleri arası geçiş)
+(function() {
+    var m = document.getElementById('fotoModal'); if (!m) return;
+    var sx = 0, sy = 0;
+    m.addEventListener('touchstart', function(e) { var t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+    m.addEventListener('touchend', function(e) {
+        if (e.target.closest('.foto-nav')) return; // ok butonları kendi işini yapar
+        var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) { galeriKaydir(dx < 0 ? 1 : -1); }
+        else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) { m.classList.remove('acik'); }
+    }, { passive: true });
+})();
 
 // Çevrimdışı çalışma (service worker)
 if ('serviceWorker' in navigator) {
