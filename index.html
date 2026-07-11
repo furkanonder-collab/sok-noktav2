@@ -164,6 +164,11 @@ body {
 .fis-toplam { font-size: 18px; font-weight: 800; color: #34d399; }
 
 .btn-geri { background: rgba(148,163,184,0.1); border: none; color: #94a3b8; font-size: 13px; font-weight: 600; padding: 8px 14px; border-radius: 999px; cursor: pointer; margin-bottom: 12px; }
+.fis-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.fis-gez { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.gez-ok { background: rgba(99,102,241,0.18); border: none; color: #a5b4fc; font-size: 18px; line-height: 1; padding: 6px 12px; border-radius: 10px; cursor: pointer; }
+.gez-ok:disabled { opacity: 0.3; cursor: default; }
+.gez-say { color: #94a3b8; font-size: 13px; font-weight: 700; min-width: 46px; text-align: center; }
 .fis-baslik { margin-bottom: 14px; }
 .fis-baslik h2 { font-size: 20px; font-weight: 700; }
 .btn-adduzenle { background: rgba(99,102,241,0.18); border: none; color: #a5b4fc; font-size: 14px; cursor: pointer; padding: 4px 9px; border-radius: 8px; vertical-align: middle; margin-left: 4px; }
@@ -249,7 +254,7 @@ body {
             <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
             <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
-        <div class="surum-not">Sürüm 12 · IndexedDB depolama</div>
+        <div class="surum-not">Sürüm 13 · IndexedDB depolama</div>
     </div>
 
     <div class="card">
@@ -343,6 +348,7 @@ var _kartFisId = null;   // kayıtlı fişe kart resmi eklerken hedef fiş id
 var _siparisScroll = 0;  // Siparişler listesindeki kaydırma konumu (fişten çıkınca geri dön)
 var _galeri = [], _galeriIndex = 0; // fiş içi ürün resmi galerisi
 var _zoomScale = 1, _zoomX = 0, _zoomY = 0; // foto modal yakınlaştırma / kaydırma
+var _acikFisId = null; // detayda açık olan fiş (kaydırarak sipariş gezme)
 
 /* ---------- localStorage ---------- */
 var _kurFields = ['rnb','usd','zNak','nNak','sNak'];
@@ -810,14 +816,32 @@ function fislerRender() {
     el.innerHTML = html;
     swipeKur();
 }
+// Siparişler listesindeki görünüm sırası (en yeni üstte) = id dizisi
+function fisSiraliIdler() {
+    var ids = [];
+    for (var i = fisler.length - 1; i >= 0; i--) ids.push(fisler[i].id);
+    return ids;
+}
+// Detayda önceki/sonraki siparişe geç (kaydırma / oklar)
+function fisKaydirGec(yon) {
+    var ids = fisSiraliIdler(), idx = ids.indexOf(_acikFisId);
+    if (idx < 0) return;
+    var y = idx + yon;
+    if (y < 0 || y >= ids.length) return;   // uçlarda dur (döngü yok)
+    fisAc(ids[y]);
+}
 function fisAc(id) {
     var fs = null;
     for (var i = 0; i < fisler.length; i++) if (fisler[i].id === id) fs = fisler[i];
     if (!fs) return;
     if (document.getElementById('fislerList').style.display !== 'none') _siparisScroll = window.scrollY || window.pageYOffset || 0;
+    _acikFisId = id;
     var k = fs.kurlar || getKurlar();
+    var _ids = fisSiraliIdler(), _pos = _ids.indexOf(id);
     var html = '';
-    html += '<button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
+    html += '<div class="fis-nav"><button class="btn-geri" onclick="fisGeri()">‹ Siparişler</button>';
+    if (_ids.length > 1) html += '<div class="fis-gez"><button class="gez-ok" ' + (_pos <= 0 ? 'disabled' : '') + ' onclick="fisKaydirGec(-1)">◀</button><span class="gez-say">' + (_pos + 1) + ' / ' + _ids.length + '</span><button class="gez-ok" ' + (_pos >= _ids.length - 1 ? 'disabled' : '') + ' onclick="fisKaydirGec(1)">▶</button></div>';
+    html += '</div>';
     html += '<div class="fis-baslik"><h2>🧾 ' + escapeHtml(fs.ad) + ' <button class="btn-adduzenle" onclick="fisAdDuzenle(' + fs.id + ')">✏️</button></h2><small>' + fs.tarih + ' · ' + fs.urunler.length + ' ürün</small></div>';
     html += '<div class="fis-sure">⏳ Tedarik süresi: <b>' + (fs.sure ? fs.sure + ' gün' : 'girilmemiş') + '</b> <button class="btn-adduzenle" onclick="fisSureDuzenle(' + fs.id + ')">✏️</button></div>';
     if (fs.kartFoto) html += '<div class="fis-kart"><img src="' + fs.kartFoto + '" onclick="fotoBuyutEl(this)"><button class="fis-kart-degistir" onclick="fisKartDegistir(' + fs.id + ')">✏️ Kartı değiştir</button></div>';
@@ -1093,6 +1117,23 @@ document.getElementById('onAdet').addEventListener('keydown', function(e) {
     }, { passive: true });
 
     m.addEventListener('dblclick', function(e) { if (!e.target.closest('.foto-nav')) zoomToggle(); }); // masaüstü
+})();
+
+// Fiş detayında sağa/sola kaydırarak önceki/sonraki siparişe geç
+(function() {
+    var d = document.getElementById('fisDetay'); if (!d) return;
+    var sx = 0, sy = 0, atla = false;
+    d.addEventListener('touchstart', function(e) {
+        var t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY;
+        // Ürün kartı (sil swipe'ı), buton/input veya kart resmi üzerindeyse gezinme yapma
+        atla = !!(e.target.closest('.swipe-wrap') || e.target.closest('button') || e.target.closest('input') || e.target.closest('.fis-kart'));
+    }, { passive: true });
+    d.addEventListener('touchend', function(e) {
+        if (atla) return;
+        if (document.getElementById('fotoModal').classList.contains('acik')) return; // foto açıkken karışmasın
+        var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.5) fisKaydirGec(dx < 0 ? 1 : -1);
+    }, { passive: true });
 })();
 
 // Çevrimdışı çalışma (service worker)
