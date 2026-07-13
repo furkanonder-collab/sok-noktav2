@@ -254,7 +254,9 @@ body {
             <button class="btn-yedek" onclick="yedekAl()">⬇️ Yedek Al</button>
             <button class="btn-yedek" onclick="document.getElementById('yedekInput').click()">⬆️ Geri Yükle</button>
         </div>
-        <div class="surum-not">Sürüm 13 · IndexedDB depolama</div>
+        <button class="btn-yedek" onclick="document.getElementById('birlestirInput').click()" style="width:100%;margin-top:8px">🔀 Yedekle Birleştir</button>
+        <div style="color:#64748b;font-size:11px;margin-top:7px;line-height:1.5;text-align:center">⬆️ Geri Yükle = mevcut veriyi <b>değiştirir</b><br>🔀 Birleştir = başka telefonun siparişlerini <b>silmeden ekler</b></div>
+        <div class="surum-not">Sürüm 14 · IndexedDB depolama</div>
     </div>
 
     <div class="card">
@@ -312,6 +314,7 @@ body {
 
 <input type="file" accept="image/*" capture="environment" id="fotoInput" style="display:none" onchange="fotoYuklendi(this)">
 <input type="file" accept=".json,application/json" id="yedekInput" style="display:none" onchange="geriYukle(this)">
+<input type="file" accept=".json,application/json" id="birlestirInput" style="display:none" onchange="yedekBirlestir(this)">
 
 <div class="foto-modal" id="fotoModal" onclick="if(event.target===this)this.classList.remove('acik')">
     <button class="foto-nav sol" id="fotoNavSol" onclick="event.stopPropagation();galeriKaydir(-1)">‹</button>
@@ -446,6 +449,32 @@ function yedekAl() {
     a.download = 'sok-nokta-yedek-' + new Date().toLocaleDateString('tr-TR').replace(/[.\/]/g, '-') + '.json';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+}
+// Başka telefonun yedeğini MEVCUT veriyle birleştir (fiş id'sine göre — silmeden ekler)
+function yedekBirlestir(input) {
+    if (!input.files || !input.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        var veri;
+        try { veri = JSON.parse(e.target.result); }
+        catch(err) { alert('Dosya okunamadı. Geçerli bir yedek dosyası seçin.'); input.value = ''; return; }
+        var gelen = Array.isArray(veri.fisler) ? veri.fisler : [];
+        if (!gelen.length) { alert('Bu yedekte kayıtlı sipariş (fiş) yok.'); input.value = ''; return; }
+        var mevcut = {};
+        fisler.forEach(function(f) { if (f && f.id != null) mevcut[f.id] = true; });
+        var eklendi = 0, atlandi = 0;
+        gelen.forEach(function(fs) {
+            if (fs && fs.id != null && !mevcut[fs.id]) { fisler.push(fs); mevcut[fs.id] = true; eklendi++; }
+            else atlandi++;
+        });
+        fisler.sort(function(a, b) { return (a.id || 0) - (b.id || 0); });
+        fislerKaydet();
+        renderFis(); tabRozetGuncelle();
+        alert('🔀 Birleştirildi.\n\n✅ ' + eklendi + ' yeni sipariş eklendi.' + (atlandi ? '\n' + atlandi + ' sipariş zaten vardı (atlandı).' : '') + '\n\nToplam: ' + fisler.length + ' sipariş.');
+        tabGoster('siparisler');
+        input.value = '';
+    };
+    reader.readAsText(input.files[0]);
 }
 function geriYukle(input) {
     if (!input.files || !input.files[0]) return;
